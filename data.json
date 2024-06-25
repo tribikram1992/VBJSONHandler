@@ -1,36 +1,130 @@
-Function GetJsonValue(jsonStr, path)
-  ' Split path by dots (.)
-  arrPath = Split(path, ".")
+Option Explicit
 
-  Do While UBound(arrPath) >= 0
-    ' Check if object
-    If InStr(jsonStr, "{") > 0 Then
-      ' Find key-value pair with matching key
-      For i = 1 To UBound(Split(jsonStr, ",")) + 1 ' Loop through key-value pairs
-        keyValue = Split(Split(jsonStr, "{")(i), "}")(0)  ' Extract key-value pair
-        If Trim(Split(keyValue, ":")(0)) = arrPath(0) Then  ' Check key match
-          value = Trim(Split(keyValue, ":")(1))  ' Extract value
-          Exit For
-        End If
-      Next i
+' Class to represent a JSON object/array
+Class JsonItem
+  Private value
+  Private isArray
 
-      If value = "" Then  ' Key not found
-        GetJsonValue = ""
+  Public Property Let Value(newVal)
+    value = newVal
+  End Property
+
+  Public Property Get Value()
+    Value = value
+  End Property
+
+  Public Property Let IsArray(newVal)
+    isArray = newVal
+  End Property
+
+  Public Property Get IsArray()
+    IsArray = isArray
+  End Property
+End Class
+
+' Function to parse a JSON string
+Function ParseJson(jsonString)
+  Dim rootObject, stack, currentObject, token, matches
+  Set rootObject = New JsonItem
+
+  ' Split the JSON string into tokens
+  Set newReg = New RegExp
+  newReg.Pattern = """[^"]*"|true|false|null|-?\d+(?:\.\d+)?|\w+"  ' Match strings, booleans, null, numbers, and keywords
+  newReg.Global = True
+  Set matches = newReg.Execute(jsonString)
+
+  ' Validate JSON structure
+  If matches.Count Mod 2 <> 1 Then  ' Invalid format (uneven number of tokens)
+    Set ParseJson = "Invalid JSON format"
+    Exit Function
+  End If
+
+  ' Build the JSON object/array structure
+  Set stack = CreateObject("Scripting.Dictionary")
+  Set currentObject = rootObject
+  For i = 0 To matches.Count - 1
+    token = matches(i).SubMatches(0)
+
+    ' Handle object/array start
+    If token = "{" Or token = "[" Then
+      Set currentObject = New JsonItem
+      currentObject.IsArray = token = "["
+      stack.Add stack.Count, currentObject
+      Set currentObject = currentObject
+
+    ' Handle object/array end
+    ElseIf token = "}" Or token = "]" Then
+      If stack.Count = 0 Then  ' Unexpected closing token
+        Set ParseJson = "Invalid JSON format: Unexpected closing token"
         Exit Function
       End If
-    ElseIf InStr(jsonStr, "[") > 0 Then
-      ' Array - find element by index
-      If IsNumeric(arrPath(0)) Then
-        value = Split(Split(jsonStr, "[")(1), "]")(arrPath(0))
+      Set currentObject = stack.Remove(stack.Count)
+
+    ' Handle key-value pairs (objects) or values (arrays)
+    Else
+      If currentObject.IsArray Then
+        ' Add value to array
+        Dim existingArray
+        On Error Resume Next
+        existingArray = currentObject.Value
+        On Error GoTo 0
+        If Err.Number = 0 Then
+          ReDim Preserve existingArray(UBound(existingArray) + 1)
+          currentObject.Value = existingArray
+        End If
+        currentObject.Value(UBound(currentObject.Value) + 1) = token
       Else
-        GetJsonValue = ""
-        Exit Function
+        ' Add key-value pair to object
+        currentObject.Value.Add token, stack.Item(stack.Count).Value  ' Recursive for nested objects
       End If
     End If
+  Next
 
-    ' Remove processed part from path
-    arrPath = Mid(Join(arrPath, "."), Len(arrPath(0)) + 2)
-  Loop
+  ' Check for empty stack (valid JSON parsing)
+  If stack.Count <> 0 Then
+    Set ParseJson = "Invalid JSON format: Unclosed object/array"
+    Exit Function
+  End If
 
-  GetJsonValue = value
+  ' Return the parsed JSON object
+  Set ParseJson = rootObject
+End Function
+
+' Function to convert a JSON object/array back to a string
+Function JsonToString(jsonObject)
+  Dim jsonType, jsonString, value
+  jsonType = VarType(jsonObject.Value)
+
+  Select Case jsonType
+    Case vbString
+      jsonString = Chr(34) & jsonObject.Value & Chr(34)  ' Enclose string in quotes
+    Case vbBoolean, vbNull
+      jsonString = jsonObject.Value
+    Case vbInteger, vbLong, vbSingle, vbDouble
+      jsonString = FormatNumber jsonObject.Value
+    Case vbObject
+      jsonString = "{ " & Join(ArrayToString(jsonObject.Value, True), ", ") & " }"
+    Case vbArray
+      jsonString = "[ " & Join(ArrayToString(jsonObject.Value, False), ", ") & " ]"
+    Case Else
+      jsonString = "Invalid JSON data type"
+  End Select
+
+  JsonToString = jsonString
+End Function
+' Function to convert a JSON object/array value collection to a string array
+Function ArrayToString(valueCollection, isObject)
+  Dim valueArray()
+  ReDim valueArray(valueCollection.Count - 1)
+  Dim i
+
+  For i = 0 To valueCollection.Count - 1
+    If isObject Then
+      valueArray(i) = JsonToString(valueCollection.Item(i))  ' Call JsonToString for nested objects
+    Else
+      valueArray(i) = valueCollection.Item(i)  ' Use value directly for arrays
+    End If
+  Next
+
+  ArrayToString = Join(valueArray, ", ")  ' Join elements with commas
 End Function

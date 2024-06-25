@@ -1,0 +1,40 @@
+' JSON string
+
+
+' Function to extract value from JSON string
+Function ExtractJsonValue(jsonStr, key)
+    Dim pattern
+    pattern = """" & key & """" & "\s*:\s*""(.*?)"""
+
+    Dim regex, matches
+    Set regex = New RegExp
+    regex.Global = False
+    regex.IgnoreCase = True
+    regex.MultiLine = True
+    regex.pattern = pattern
+
+    Set matches = regex.Execute(jsonStr)
+    If matches.Count > 0 Then
+        ExtractJsonValue = matches(0).SubMatches(0)
+    Else
+        ExtractJsonValue = ""
+    End If
+End Function
+
+Sub main()
+
+jsonStr = "{ ""id"": 1, ""name"": ""A green door"", ""tags"": [""home"", ""green""], ""price"": 125 }"
+
+
+' Usage example:
+Dim id, tag0, tag1
+id = ExtractJsonValue(jsonStr, "id")
+tag0 = ExtractJsonValue(jsonStr, "tags\[0\]")
+tag1 = ExtractJsonValue(jsonStr, "tags\[1\]")
+
+' Output the results
+MsgBox "id: " & id
+MsgBox "tags[0]: " & tag0
+MsgBox "tags[1]: " & tag1
+End Sub
+

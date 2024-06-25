@@ -17,19 +17,18 @@ Function WriteJsonToFile(filePath, content)
   Set objFSO = Nothing
 End Function
 
-' Function to get value by JSON path (basic implementation)
+' Function to get value by JSON path (improved)
 Function GetJsonValue(jsonStr, path)
   ' Split path by dots (.)
   arrPath = Split(path, ".")
-  
+
   Do While UBound(arrPath) >= 0
-    ' Check if object or array
+    ' Check if object
     If InStr(jsonStr, "{") > 0 Then
-      ' Object - find key-value pair
-    Set match = ReDim(RegExp.Exec(jsonStr, Chr(34) & arrPath(0) & Chr(34) & ":\s*(.*?)(?=})", 1), 0)
-     ' Set match = ReDim(RegExp.Exec(jsonStr, "(?<=^{0,}" & arrPath(0) & ":\s*)(.*?)(?=}$|,)"), 0)
-      If match.Count > 0 Then
-        jsonStr = match(0)
+      ' Find key-value pair with matching key
+      Set match = RegExp.Exec(jsonStr, Chr(34) & arrPath(0) & Chr(34) & ":\s*(.*?)(?=})")
+      If match.Count > 1 Then
+        jsonStr = match(1)
       Else
         GetJsonValue = ""
         Exit Function
@@ -43,14 +42,13 @@ Function GetJsonValue(jsonStr, path)
         Exit Function
       End If
     End If
-    
+
     ' Remove processed part from path
     arrPath = Mid(Join(arrPath, "."), Len(arrPath(0)) + 2)
   Loop
-  
+
   GetJsonValue = jsonStr
 End Function
-
 ' Function to update value by JSON path (replace entire value)
 Function UpdateJsonValue(jsonStr, path, newValue)
   ' Get current value location

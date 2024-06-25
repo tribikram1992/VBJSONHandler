@@ -184,25 +184,30 @@ Function GetValueFromJSON(jsonObj, jsonPath)
 
     ' Traverse through JSON object using path components
     For i = 0 To UBound(pathComponents)
-        If InStr(pathComponents(i), "[") > 0 Then
-            ' Handle array index access
-            key = Left(pathComponents(i), InStr(pathComponents(i), "[") - 1)
-            index = CInt(Mid(pathComponents(i), InStr(pathComponents(i), "[") + 1, Len(pathComponents(i)) - InStr(pathComponents(i), "[") - 1))
-            If IsObject(current(key)) Then
-                Set current = current(key)
-                Set current = current(index)
+        If IsObject(current) Then
+            If InStr(pathComponents(i), "[") > 0 Then
+                ' Handle array index access
+                key = Left(pathComponents(i), InStr(pathComponents(i), "[") - 1)
+                index = CInt(Mid(pathComponents(i), InStr(pathComponents(i), "[") + 1, Len(pathComponents(i)) - InStr(pathComponents(i), "[") - 1))
+                If IsObject(current(key)) Then
+                    Set current = current(key)
+                    Set current = current(index)
+                Else
+                    Set GetValueFromJSON = Nothing ' Return null if path not found
+                    Exit Function
+                End If
             Else
-                GetValueFromJSON = Null ' Return null if path not found
-                Exit Function
+                ' Handle regular key access
+                If IsObject(current(pathComponents(i))) Then
+                    Set current = current(pathComponents(i))
+                Else
+                    Set GetValueFromJSON = Nothing ' Return null if path not found
+                    Exit Function
+                End If
             End If
         Else
-            ' Handle regular key access
-            If IsObject(current(pathComponents(i))) Then
-                Set current = current(pathComponents(i))
-            Else
-                GetValueFromJSON = Null ' Return null if path not found
-                Exit Function
-            End If
+            Set GetValueFromJSON = Nothing ' Return null if path not found
+            Exit Function
         End If
     Next
 
@@ -210,35 +215,23 @@ Function GetValueFromJSON(jsonObj, jsonPath)
     GetValueFromJSON = current
 End Function
 
+Sub main()
 ' Example usage:
 Dim jsonStr, jsonParsed, path, title, price, color, author, nonExisting
 
-jsonStr = "{""store"": {""book"": [{""category"": ""reference"",""author"": ""Nigel Rees"",""title"": ""Sayings of the Century"",""price"": 8.95},{""category"": ""fiction"",""author"": ""Evelyn Waugh"",""title"": ""Sword of Honour"",""price"": 12.99},{""category"": ""fiction"",""author"": ""Herman Melville"",""title"": ""Moby Dick"",""isbn"": ""0-553-21311-3"",""price"": 8.99},{""category"": ""fiction"",""author"": ""J. R. R. Tolkien"",""title"": ""The Lord of the Rings"",""isbn"": ""0-395-19395-8"",""price"": 22.99}],""bicycle"": {""color"": ""red"",""price"": 19.95}}}"
+jsonStr = "{ ""id"": 1, ""name"": ""A green door"", ""tags"": [""home"", ""green""], ""price"": 125 }"
 
 ' Parse JSON string into object
 Set jsonParsed = ParseJSON(jsonStr)
 
 If Not jsonParsed Is Nothing Then
     ' Example usage of GetValueFromJSON function
-    path = "store.book[0].title"
+    path = "tags[0]"
     title = GetValueFromJSON(jsonParsed, path)
-    WScript.Echo "Value at '" & path & "': " & title
-
-    path = "store.book[2].price"
-    price = GetValueFromJSON(jsonParsed, path)
-    WScript.Echo "Value at '" & path & "': " & price
-
-    path = "store.bicycle.color"
-    color = GetValueFromJSON(jsonParsed, path)
-    WScript.Echo "Value at '" & path & "': " & color
-
-    path = "store.book[3].author"
-    author = GetValueFromJSON(jsonParsed, path)
-    WScript.Echo "Value at '" & path & "': " & author
-
-    path = "store.book[1].non_existing_field"
-    nonExisting = GetValueFromJSON(jsonParsed, path)
-    WScript.Echo "Value at '" & path & "': " & nonExisting
+    MsgBox "Value at '" & path & "': " & title
 Else
-    WScript.Echo "Failed to parse JSON."
+    MsgBox "Failed to parse JSON."
 End If
+
+
+End Sub

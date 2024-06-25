@@ -1,9 +1,36 @@
-{
-  "person": {
-    "name": "Alice",
-    "age": 30,
-    "hobbies": ["reading", "hiking", "coding"]
-  },
-  "city": "New York",
-  "isActive": true
-}
+Function GetJsonValue(jsonStr, path)
+  ' Split path by dots (.)
+  arrPath = Split(path, ".")
+
+  Do While UBound(arrPath) >= 0
+    ' Check if object
+    If InStr(jsonStr, "{") > 0 Then
+      ' Find key-value pair with matching key
+      For i = 1 To UBound(Split(jsonStr, ",")) + 1 ' Loop through key-value pairs
+        keyValue = Split(Split(jsonStr, "{")(i), "}")(0)  ' Extract key-value pair
+        If Trim(Split(keyValue, ":")(0)) = arrPath(0) Then  ' Check key match
+          value = Trim(Split(keyValue, ":")(1))  ' Extract value
+          Exit For
+        End If
+      Next i
+
+      If value = "" Then  ' Key not found
+        GetJsonValue = ""
+        Exit Function
+      End If
+    ElseIf InStr(jsonStr, "[") > 0 Then
+      ' Array - find element by index
+      If IsNumeric(arrPath(0)) Then
+        value = Split(Split(jsonStr, "[")(1), "]")(arrPath(0))
+      Else
+        GetJsonValue = ""
+        Exit Function
+      End If
+    End If
+
+    ' Remove processed part from path
+    arrPath = Mid(Join(arrPath, "."), Len(arrPath(0)) + 2)
+  Loop
+
+  GetJsonValue = value
+End Function

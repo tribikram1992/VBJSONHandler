@@ -1,3 +1,5 @@
+Option Explicit
+
 Function ParseJSON(jsonStr)
     Dim index
     index = 1
@@ -5,74 +7,102 @@ Function ParseJSON(jsonStr)
 End Function
 
 Function ParseValue(jsonStr, ByRef index)
-    Dim token, value, isArray, obj
+    Dim token, value
     token = GetNextToken(jsonStr, index)
     
     If token = "{" Then
-        Set obj = CreateObject("Scripting.Dictionary")
-        Do
-            index = index + 1
-            key = ParseString(jsonStr, index)
-            If key = "" Then Exit Do ' Error in key parsing
-            index = SkipWhitespace(jsonStr, index)
-            
-            If Mid(jsonStr, index, 1) = ":" Then
-                index = index + 1 ' Move past ':'
-            Else
-                Exit Do ' Error in JSON format
-            End If
-            index = SkipWhitespace(jsonStr, index)
-            
-            Set value = ParseValue(jsonStr, index)
-            If value Is Nothing Then Exit Do ' Error in value parsing
-            
-            obj(key) = value
-            index = SkipWhitespace(jsonStr, index)
-            
-            token = GetNextToken(jsonStr, index)
-            If token = "}" Then
-                index = index + 1 ' Move past '}'
-                Exit Do
-            ElseIf token <> "," Then
-                Exit Do ' Error in JSON format
-            End If
-        Loop
-        
-        Set ParseValue = obj
+        Set value = ParseObject(jsonStr, index)
     ElseIf token = "[" Then
-        isArray = True
-        Set arr = CreateObject("Scripting.Dictionary")
-        Do
-            index = index + 1
-            Set value = ParseValue(jsonStr, index)
-            If value Is Nothing Then Exit Do ' Error in array value parsing
-            
-            arr(arr.Count) = value
-            index = SkipWhitespace(jsonStr, index)
-            
-            token = GetNextToken(jsonStr, index)
-            If token = "]" Then
-                index = index + 1 ' Move past ']'
-                Exit Do
-            ElseIf token <> "," Then
-                Exit Do ' Error in JSON format
-            End If
-        Loop
-        
-        Set ParseValue = arr
+        Set value = ParseArray(jsonStr, index)
+    ElseIf token = """" Then
+        value = ParseString(jsonStr, index)
     ElseIf IsNumeric(token) Then
-        Set ParseValue = CDbl(token) ' Convert to double (assumes number)
+        value = CDbl(token)
     ElseIf LCase(token) = "true" Then
-        Set ParseValue = True
+        value = True
     ElseIf LCase(token) = "false" Then
-        Set ParseValue = False
+        value = False
     ElseIf LCase(token) = "null" Then
-        Set ParseValue = Nothing
-    ElseIf Left(token, 1) = """" Then
-        Set ParseValue = ParseString(jsonStr, index)
+        Set value = Nothing
     Else
-        Set ParseValue = Nothing ' Invalid JSON format
+        ' Invalid JSON format
+        value = Nothing
     End If
+    
+    ParseValue = value
+End Function
+
+Function ParseObject(jsonStr, ByRef index)
+    Dim obj, key, value
+    Set obj = CreateObject("Scripting.Dictionary")
+    index = index + 1 ' Move past '{'
+    
+    Do
+        index = SkipWhitespace(jsonStr, index)
+        If Mid(jsonStr, index, 1) = "}" Then
+            index = index + 1 ' Move past '}'
+            Exit Do
+        End If
+        
+        key = ParseString(jsonStr, index)
+        If key = "" Then Exit Do ' Error in key parsing
+        
+        index = SkipWhitespace(jsonStr, index)
+        If Mid(jsonStr, index, 1) = ":" Then
+            index = index + 1 ' Move past ':'
+        Else
+            Exit Do ' Error in JSON format
+        End If
+        
+        index = SkipWhitespace(jsonStr, index)
+        Set value = ParseValue(jsonStr, index)
+        If value Is Nothing Then Exit Do ' Error in value parsing
+        
+        obj(key) = value
+        
+        index = SkipWhitespace(jsonStr, index)
+        If Mid(jsonStr, index, 1) = "," Then
+            index = index + 1 ' Move past ','
+        ElseIf Mid(jsonStr, index, 1) = "}" Then
+            index = index + 1 ' Move past '}'
+            Exit Do
+        Else
+            Exit Do ' Error in JSON format
+        End If
+    Loop
+    
+    Set ParseObject = obj
+End Function
+
+Function ParseArray(jsonStr, ByRef index)
+    Dim arr, value
+    Set arr = CreateObject("Scripting.Dictionary")
+    index = index + 1 ' Move past '['
+    
+    Do
+        index = SkipWhitespace(jsonStr, index)
+        If Mid(jsonStr, index, 1) = "]" Then
+            index = index + 1 ' Move past ']'
+            Exit Do
+        End If
+        
+        Set value = ParseValue(jsonStr, index)
+        If value Is Nothing Then Exit Do ' Error in array value parsing
+        
+        arr(arr.Count) = value
+        
+        index = SkipWhitespace(jsonStr, index)
+        If Mid(jsonStr, index, 1) = "," Then
+            index = index + 1 ' Move past ','
+        ElseIf Mid(jsonStr, index, 1) = "]" Then
+            index = index + 1 ' Move past ']'
+            Exit Do
+        Else
+            Exit Do ' Error in JSON format
+        End If
+    Loop
+    
+    Set ParseArray = arr
 End Function
 
 Function ParseString(jsonStr, ByRef index)
@@ -181,6 +211,8 @@ Function GetValueFromJSON(jsonObj, jsonPath)
 End Function
 
 ' Example usage:
+Dim jsonStr, jsonParsed, path, title, price, color, author, nonExisting
+
 jsonStr = "{""store"": {""book"": [{""category"": ""reference"",""author"": ""Nigel Rees"",""title"": ""Sayings of the Century"",""price"": 8.95},{""category"": ""fiction"",""author"": ""Evelyn Waugh"",""title"": ""Sword of Honour"",""price"": 12.99},{""category"": ""fiction"",""author"": ""Herman Melville"",""title"": ""Moby Dick"",""isbn"": ""0-553-21311-3"",""price"": 8.99},{""category"": ""fiction"",""author"": ""J. R. R. Tolkien"",""title"": ""The Lord of the Rings"",""isbn"": ""0-395-19395-8"",""price"": 22.99}],""bicycle"": {""color"": ""red"",""price"": 19.95}}}"
 
 ' Parse JSON string into object

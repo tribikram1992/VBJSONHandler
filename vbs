@@ -1,76 +1,107 @@
-def parse_json(json_str):
-    stack = []
-    result = {}
-    current_key = None
-    current_value = None
-    in_string = False
-    escape = False
+Function ParseJson(jsonStr)
+    Dim stack: Set stack = CreateObject("Scripting.Dictionary")
+    Dim result: Set result = CreateObject("Scripting.Dictionary")
+    Dim currentKey
+    Dim currentValue
+    Dim inString
+    Dim escape
+    Dim i
 
-    i = 0
-    while i < len(json_str):
-        char = json_str[i]
+    i = 1
+    While i <= Len(jsonStr)
+        Dim char: char = Mid(jsonStr, i, 1)
 
-        if in_string:
-            if escape:
+        If inString Then
+            If escape Then
                 escape = False
-            elif char == '\\':
+            ElseIf char = "\" Then
                 escape = True
-            elif char == '"':
-                in_string = False
-            current_value += char
-        else:
-            if char == '{':
-                if current_key is not None:
-                    stack.append(result)
-                    result[current_key] = {}
-                    result = result[current_key]
-                    current_key = None
-                else:
-                    stack.append({})
-                    result = stack[-1]
-            elif char == '}':
-                if current_key is not None:
-                    result[current_key] = current_value
-                    current_key = None
-                    current_value = None
-                if stack:
-                    result = stack.pop()
-            elif char == '[':
-                if current_key is not None:
-                    stack.append(result)
-                    result[current_key] = []
-                    result = result[current_key]
-                    current_key = None
-                else:
-                    stack.append([])
-                    result = stack[-1]
-            elif char == ']':
-                if current_value is not None:
-                    result.append(current_value)
-                    current_value = None
-                if stack:
-                    result = stack.pop()
-            elif char == '"':
-                in_string = True
-                current_value = ""
-            elif char == ',':
-                if current_value is not None:
-                    if current_key is None:
-                        result.append(current_value)
-                    else:
-                        result[current_key] = current_value
-                    current_value = None
-            elif char == ':':
-                current_key = current_value
-                current_value = None
-            elif char == ' ' or char == '\n' or char == '\t' or char == '\r':
-                pass  # ignore whitespace
-            else:
-                if current_value is None:
-                    current_value = char
-                else:
-                    current_value += char
+            ElseIf char = """" Then
+                inString = False
+            End If
+            currentValue = currentValue & char
+        Else
+            Select Case char
+                Case "{"
+                    If Not IsEmpty(currentKey) Then
+                        stack.Add stack.Count, result
+                        result.Add currentKey, CreateObject("Scripting.Dictionary")
+                        Set result = result(currentKey)
+                        currentKey = Empty
+                    Else
+                        stack.Add stack.Count, CreateObject("Scripting.Dictionary")
+                        Set result = stack(stack.Count - 1)
+                    End If
+                Case "}"
+                    If Not IsEmpty(currentKey) Then
+                        result.Add currentKey, currentValue
+                        currentKey = Empty
+                        currentValue = Empty
+                    End If
+                    If stack.Count > 0 Then
+                        Set result = stack(stack.Count - 1)
+                        stack.Remove stack.Count - 1
+                    End If
+                Case "["
+                    If Not IsEmpty(currentKey) Then
+                        stack.Add stack.Count, result
+                        result.Add currentKey, CreateObject("Scripting.Dictionary")
+                        Set result = result(currentKey)
+                        currentKey = Empty
+                    Else
+                        stack.Add stack.Count, CreateObject("Scripting.Dictionary")
+                        Set result = stack(stack.Count - 1)
+                    End If
+                Case "]"
+                    If Not IsEmpty(currentValue) Then
+                        result.Add result.Count, currentValue
+                        currentValue = Empty
+                    End If
+                    If stack.Count > 0 Then
+                        Set result = stack(stack.Count - 1)
+                        stack.Remove stack.Count - 1
+                    End If
+                Case ":"
+                    currentKey = currentValue
+                    currentValue = Empty
+                Case ","
+                    If Not IsEmpty(currentValue) Then
+                        If IsEmpty(currentKey) Then
+                            result.Add result.Count, currentValue
+                        Else
+                            result.Add currentKey, currentValue
+                        End If
+                        currentValue = Empty
+                    End If
+                Case """"
+                    inString = True
+                    currentValue = ""
+                Case " ", vbTab, vbCr, vbLf
+                    ' Ignore whitespace
+                Case Else
+                    currentValue = currentValue & char
+            End Select
+        End If
 
-        i += 1
+        i = i + 1
+    Wend
 
-    if
+    ' Final check for any remaining value
+    If Not IsEmpty(currentKey) And Not IsEmpty(currentValue) Then
+        result.Add currentKey, currentValue
+    End If
+
+    Set ParseJson = result
+End Function
+
+' Example usage:
+Dim jsonString
+jsonString = "{""name"": ""John Smith"", ""age"": 30, ""city"": ""New York"", ""children"": [{""name"": ""Jane"", ""age"": 5}, {""name"": ""Alex"", ""age"": 8}]}"
+Dim jsonObject
+Set jsonObject = ParseJson(jsonString)
+
+' Output the parsed JSON object
+Dim key
+For Each key In jsonObject.Keys
+    WScript.Echo key & ": " & jsonObject(key)
+Next

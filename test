@@ -13,32 +13,37 @@ jsonString = "{ ""id"": 1, ""name"": ""John Doe"", ""address"": { ""city"": ""Ne
 Dim parsedJsonObject
 Set parsedJsonObject = scriptControl.eval("(" & jsonString & ")")
 
+' Define JavaScript function code
+Dim jsFunctionCode
+jsFunctionCode = "function getValueByJsonPath(parsedJsonObject, jsonpath) { " &_
+                 "var parts = jsonpath.split('.');" &_
+                 "var current = parsedJsonObject;" &_
+                 "for (var i = 0; i < parts.length; i++) {" &_
+                 "var part = parts[i];" &_
+                 "if (part.includes('[') && part.endsWith(']')) {" &_
+                 "var arrayPart = part.split('[');" &_
+                 "var propName = arrayPart[0];" &_
+                 "var index = parseInt(arrayPart[1].replace(']', ''));" &_
+                 "current = current[propName][index];" &_
+                 "} else {" &_
+                 "current = current[part];" &_
+                 "}" &_
+                 "if (current === undefined || current === null) { break; }" &_
+                 "}" &_
+                 "return current; }"
+
+' Add JavaScript function to scriptControl
+scriptControl.AddCode jsFunctionCode
+
 ' Function to get value by JSON path
 Function GetValueByJsonPath(parsedJsonObject, jsonpath)
-    ' Define JavaScript function code
-    Dim jsFunctionCode
-    jsFunctionCode = "function getValueByJsonPath(parsedJsonObject, jsonpath) { " &_
-                     "var parts = jsonpath.split('.');" &_
-                     "var current = parsedJsonObject;" &_
-                     "for (var i = 0; i < parts.length; i++) {" &_
-                     "var part = parts[i];" &_
-                     "if (part.includes('[') && part.endsWith(']')) {" &_
-                     "var arrayPart = part.split('[');" &_
-                     "var propName = arrayPart[0];" &_
-                     "var index = parseInt(arrayPart[1].replace(']', ''));" &_
-                     "current = current[propName][index];" &_
-                     "} else {" &_
-                     "current = current[part];" &_
-                     "}" &_
-                     "if (current === undefined || current === null) { break; }" &_
-                     "}" &_
-                     "return current; }"
-
-    ' Add JavaScript function to scriptControl
-    scriptControl.AddCode jsFunctionCode
-    
     ' Call JavaScript function to get value by JSON path
+    On Error Resume Next
     GetValueByJsonPath = scriptControl.Run("getValueByJsonPath", parsedJsonObject, jsonpath)
+    If Err.Number <> 0 Then
+        GetValueByJsonPath = Null
+    End If
+    On Error GoTo 0
 End Function
 
 ' Example usage

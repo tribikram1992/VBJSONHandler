@@ -1,0 +1,93 @@
+' Function to read JSON file content
+Function ReadJsonFile(filePath)
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objFile = objFSO.OpenTextFile(filePath, 1) 
+  content = objFile.ReadAll
+  objFile.Close
+  Set objFSO = Nothing
+  ReadJsonFile = content
+End Function
+
+' Function to write JSON content to file
+Function WriteJsonToFile(filePath, content)
+  Set objFSO = CreateObject("Scripting.FileSystemObject")
+  Set objFile = objFSO.CreateTextFile(filePath, True) 
+  objFile.WriteLine content
+  objFile.Close
+  Set objFSO = Nothing
+End Function
+
+' Function to get value by JSON path (basic implementation)
+Function GetJsonValue(jsonStr, path)
+  ' Split path by dots (.)
+  arrPath = Split(path, ".")
+  
+  Do While UBound(arrPath) >= 0
+    ' Check if object or array
+    If InStr(jsonStr, "{") > 0 Then
+      ' Object - find key-value pair
+      Set match = ReDim(RegExp.Exec(jsonStr, "(?<=^{0,}" & arrPath(0) & ":\s*)(.*?)(?=}$|,)"), 0)
+      If match.Count > 0 Then
+        jsonStr = match(0)
+      Else
+        GetJsonValue = ""
+        Exit Function
+      End If
+    ElseIf InStr(jsonStr, "[") > 0 Then
+      ' Array - find element by index
+      If IsNumeric(arrPath(0)) Then
+        jsonStr = Split(Split(jsonStr, "[")(1), "]")(arrPath(0))
+      Else
+        GetJsonValue = ""
+        Exit Function
+      End If
+    End If
+    
+    ' Remove processed part from path
+    arrPath = Mid(Join(arrPath, "."), Len(arrPath(0)) + 2)
+  Loop
+  
+  GetJsonValue = jsonStr
+End Function
+
+' Function to update value by JSON path (replace entire value)
+Function UpdateJsonValue(jsonStr, path, newValue)
+  ' Get current value location
+  oldValue = GetJsonValue(jsonStr, path)
+  
+  ' Replace with new value (basic implementation, assumes unique paths)
+  UpdateJsonValue = Replace(jsonStr, oldValue, newValue, 1)
+End Function
+
+' Function to delete value by JSON path (remove key-value pair or element)
+Function DeleteJsonValue(jsonStr, path)
+  ' Get current value location
+  oldValue = GetJsonValue(jsonStr, path)
+  
+  ' Remove based on object/array structure (basic implementation)
+  If InStr(jsonStr, "{") > 0 Then
+    DeleteJsonValue = Replace(jsonStr, Left(jsonStr, InStr(jsonStr, oldValue) - 1) & Mid(jsonStr, InStr(jsonStr, oldValue) + Len(oldValue) + 2), "", 1)
+  ElseIf InStr(jsonStr, "[") > 0 Then
+    arrJson = Split(jsonStr, "[")
+    arrJson(1) = Replace(arrJson(1), oldValue & ",", "", 1)
+    arrJson(1) = Replace(arrJson(1), oldValue & "]", "", 1)
+    DeleteJsonValue = "[" & Join(arrJson, "[") & "]"
+  End If
+End Function
+
+' Example usage
+content = ReadJsonFile("data.json")
+
+' Get value
+name = GetJsonValue(content, "person.name")
+
+' Update value
+content = UpdateJsonValue(content, "person.age", "30")
+
+' Delete value
+content = DeleteJsonValue(content, "hobbies[1]")
+
+' Write updated content
+WriteJsonToFile("data.json", content)
+
+MsgBox "JSON file processed!"

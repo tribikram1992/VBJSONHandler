@@ -1,0 +1,1 @@
+isObjectPresent = scriptControl.eval("typeof myObject !== 'undefined' && myObject !== null;")

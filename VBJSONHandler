@@ -1,0 +1,212 @@
+Function ParseJSON(jsonStr)
+    Dim index
+    index = 1
+    Set ParseJSON = ParseValue(jsonStr, index)
+End Function
+
+Function ParseValue(jsonStr, ByRef index)
+    Dim token, value, isArray, obj
+    token = GetNextToken(jsonStr, index)
+    
+    If token = "{" Then
+        Set obj = CreateObject("Scripting.Dictionary")
+        Do
+            index = index + 1
+            key = ParseString(jsonStr, index)
+            If key = "" Then Exit Do ' Error in key parsing
+            index = SkipWhitespace(jsonStr, index)
+            
+            If Mid(jsonStr, index, 1) = ":" Then
+                index = index + 1 ' Move past ':'
+            Else
+                Exit Do ' Error in JSON format
+            End If
+            index = SkipWhitespace(jsonStr, index)
+            
+            Set value = ParseValue(jsonStr, index)
+            If value Is Nothing Then Exit Do ' Error in value parsing
+            
+            obj(key) = value
+            index = SkipWhitespace(jsonStr, index)
+            
+            token = GetNextToken(jsonStr, index)
+            If token = "}" Then
+                index = index + 1 ' Move past '}'
+                Exit Do
+            ElseIf token <> "," Then
+                Exit Do ' Error in JSON format
+            End If
+        Loop
+        
+        Set ParseValue = obj
+    ElseIf token = "[" Then
+        isArray = True
+        Set arr = CreateObject("Scripting.Dictionary")
+        Do
+            index = index + 1
+            Set value = ParseValue(jsonStr, index)
+            If value Is Nothing Then Exit Do ' Error in array value parsing
+            
+            arr(arr.Count) = value
+            index = SkipWhitespace(jsonStr, index)
+            
+            token = GetNextToken(jsonStr, index)
+            If token = "]" Then
+                index = index + 1 ' Move past ']'
+                Exit Do
+            ElseIf token <> "," Then
+                Exit Do ' Error in JSON format
+            End If
+        Loop
+        
+        Set ParseValue = arr
+    ElseIf IsNumeric(token) Then
+        Set ParseValue = CDbl(token) ' Convert to double (assumes number)
+    ElseIf LCase(token) = "true" Then
+        Set ParseValue = True
+    ElseIf LCase(token) = "false" Then
+        Set ParseValue = False
+    ElseIf LCase(token) = "null" Then
+        Set ParseValue = Nothing
+    ElseIf Left(token, 1) = """" Then
+        Set ParseValue = ParseString(jsonStr, index)
+    Else
+        Set ParseValue = Nothing ' Invalid JSON format
+    End If
+End Function
+
+Function ParseString(jsonStr, ByRef index)
+    Dim startPos, endPos, str
+    startPos = index
+    
+    ' Find the starting double quote
+    If Mid(jsonStr, index, 1) = """" Then
+        index = index + 1 ' Move past starting quote
+        Do While index <= Len(jsonStr)
+            If Mid(jsonStr, index, 1) = """" And Mid(jsonStr, index - 1, 1) <> "\" Then
+                endPos = index - 1
+                Exit Do
+            End If
+            index = index + 1
+        Loop
+        
+        ' Extract the string without quotes
+        If startPos > 0 And endPos > 0 Then
+            str = Mid(jsonStr, startPos + 1, endPos - startPos)
+            index = index + 1 ' Move past ending quote
+            ParseString = str
+        Else
+            ParseString = "" ' Error in string parsing
+        End If
+    Else
+        ParseString = "" ' Invalid JSON format
+    End If
+End Function
+
+Function GetNextToken(jsonStr, index)
+    Dim token, ch
+    token = ""
+    
+    index = SkipWhitespace(jsonStr, index)
+    If index > Len(jsonStr) Then Exit Function ' End of string
+    
+    ch = Mid(jsonStr, index, 1)
+    If ch = "{" Or ch = "}" Or ch = "[" Or ch = "]" Or ch = "," Or ch = ":" Then
+        token = ch
+    ElseIf ch = """" Then
+        token = """"
+    ElseIf IsNumeric(ch) Or ch = "-" Then
+        ' Read number
+        Do While index <= Len(jsonStr) And (IsNumeric(ch) Or ch = "-" Or ch = ".")
+            token = token & ch
+            index = index + 1
+            ch = Mid(jsonStr, index, 1)
+        Loop
+        index = index - 1 ' Move back one character
+    Else
+        ' Read true, false, or null
+        Do While index <= Len(jsonStr) And (Asc(ch) >= 97 And Asc(ch) <= 122)
+            token = token & ch
+            index = index + 1
+            ch = Mid(jsonStr, index, 1)
+        Loop
+        index = index - 1 ' Move back one character
+    End If
+    
+    GetNextToken = token
+End Function
+
+Function SkipWhitespace(str, index)
+    ' Skip whitespace characters
+    Do While index <= Len(str) And (Mid(str, index, 1) = " " Or Mid(str, index, 1) = vbTab Or Mid(str, index, 1) = vbCrLf)
+        index = index + 1
+    Loop
+    SkipWhitespace = index
+End Function
+
+' Function to get value from parsed JSON object at a specified path
+Function GetValueFromJSON(jsonObj, jsonPath)
+    Dim pathComponents, current, i, key, index
+
+    ' Split JSON path into components
+    pathComponents = Split(jsonPath, ".")
+    Set current = jsonObj
+
+    ' Traverse through JSON object using path components
+    For i = 0 To UBound(pathComponents)
+        If InStr(pathComponents(i), "[") > 0 Then
+            ' Handle array index access
+            key = Left(pathComponents(i), InStr(pathComponents(i), "[") - 1)
+            index = CInt(Mid(pathComponents(i), InStr(pathComponents(i), "[") + 1, Len(pathComponents(i)) - InStr(pathComponents(i), "[") - 1))
+            If IsObject(current(key)) Then
+                Set current = current(key)
+                Set current = current(index)
+            Else
+                GetValueFromJSON = Null ' Return null if path not found
+                Exit Function
+            End If
+        Else
+            ' Handle regular key access
+            If IsObject(current(pathComponents(i))) Then
+                Set current = current(pathComponents(i))
+            Else
+                GetValueFromJSON = Null ' Return null if path not found
+                Exit Function
+            End If
+        End If
+    Next
+
+    ' Return final value
+    GetValueFromJSON = current
+End Function
+
+' Example usage:
+jsonStr = "{""store"": {""book"": [{""category"": ""reference"",""author"": ""Nigel Rees"",""title"": ""Sayings of the Century"",""price"": 8.95},{""category"": ""fiction"",""author"": ""Evelyn Waugh"",""title"": ""Sword of Honour"",""price"": 12.99},{""category"": ""fiction"",""author"": ""Herman Melville"",""title"": ""Moby Dick"",""isbn"": ""0-553-21311-3"",""price"": 8.99},{""category"": ""fiction"",""author"": ""J. R. R. Tolkien"",""title"": ""The Lord of the Rings"",""isbn"": ""0-395-19395-8"",""price"": 22.99}],""bicycle"": {""color"": ""red"",""price"": 19.95}}}"
+
+' Parse JSON string into object
+Set jsonParsed = ParseJSON(jsonStr)
+
+If Not jsonParsed Is Nothing Then
+    ' Example usage of GetValueFromJSON function
+    path = "store.book[0].title"
+    title = GetValueFromJSON(jsonParsed, path)
+    WScript.Echo "Value at '" & path & "': " & title
+
+    path = "store.book[2].price"
+    price = GetValueFromJSON(jsonParsed, path)
+    WScript.Echo "Value at '" & path & "': " & price
+
+    path = "store.bicycle.color"
+    color = GetValueFromJSON(jsonParsed, path)
+    WScript.Echo "Value at '" & path & "': " & color
+
+    path = "store.book[3].author"
+    author = GetValueFromJSON(jsonParsed, path)
+    WScript.Echo "Value at '" & path & "': " & author
+
+    path = "store.book[1].non_existing_field"
+    nonExisting = GetValueFromJSON(jsonParsed, path)
+    WScript.Echo "Value at '" & path & "': " & nonExisting
+Else
+    WScript.Echo "Failed to parse JSON."
+End If

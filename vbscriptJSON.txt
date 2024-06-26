@@ -1,0 +1,7971 @@
+Attribute VB_Name = "JSON"
+Const PI = 3.14159265358979
+Const E = 2.71828182845905
+Public Function toArray(data)
+	Dim x
+	x = Len(data)
+	set a = CreateObject("Scripting.Dictionary")
+	i = 0
+	while i < x
+		a(i) = Mid(data, 1+i, 1)
+		i = i + 1
+	Wend
+	
+	set toArray = a
+End Function
+Public Sub EraseArray(x)
+	Set x = Nothing
+End Sub
+
+Public Function Modulus(ByVal a, ByVal n)
+		Modulus = a - n*int(a/n)
+End Function
+Public Function allocArray(n)
+	Dim a
+	set a = CreateObject("Scripting.Dictionary")
+	i = 0
+	While i < n
+		Set a(i) = Nothing
+		i = i + 1
+	WEnd
+	set allocArray = a
+	End Function
+
+Public Function Ceiling(ByVal X)
+	If X <> Int(X) Then
+		If X > 0 Then
+			Ceiling = Int(X) + 1
+		Else
+			Ceiling = Int(X)
+		End If
+	Else
+		Ceiling = X
+	End If
+End Function
+
+Public Function Floor(ByVal X)
+	If X <> Int(X) Then
+		If X > 0 Then
+			Floor = Int(X)
+		Else
+			Floor = Int(X) - 1
+		End If
+	Else
+		Floor = X
+	End If
+End Function
+
+Public Function Round(ByVal x)
+		Round = Floor(x + 0.5)
+End Function
+Public Function Max(ByVal X, ByVal Y)
+	If X > Y Then
+		Max = X
+	Else
+		Max = Y
+	End If
+End Function
+Public Function Min(ByVal X, ByVal Y)
+	If X < Y Then
+		Min = X
+	Else
+		Min = Y
+	End If
+End Function
+Public Function Log10(ByVal x)
+	Log10 = log(x)/log(10)
+End Function
+Public Function Pow(ByVal x, ByVal y)
+	Pow = x ^ y
+End Function
+Public Function ASin(ByVal val)
+	ASin = 2 * Atn(val / (1 + Sqr(1 - (val * val))))
+End Function
+Public Function ACos(ByVal val)
+	ACos = PI / 2 - ASin(val)
+End Function
+
+Public Function JSONCompare(a, b, ByVal epsilon, equal, message)
+	Dim success
+	Dim eaRef, ebRef
+	Dim ea, eb
+
+	Set eaRef = New DataReference
+	Set ebRef = New DataReference
+
+	success = ReadJSON(a, eaRef, message)
+
+	If success Then
+		Set ea = eaRef.data
+
+		success = ReadJSON(b, ebRef, message)
+
+		If success Then
+			Set eb = ebRef.data
+
+			equal.booleanValue = JSONCompareElements(ea, eb, epsilon)
+
+			Call FreeData(eb)
+		End If
+
+		Call FreeData(ea)
+	End If
+
+	JSONCompare = success
+End Function
+
+
+Public Function JSONCompareElements(ea, eb, ByVal epsilon)
+	Dim equal
+
+	equal = DataTypeEquals(ea, eb)
+        
+	If equal Then
+		If IsStructure(ea) Then
+			equal = JSONCompareObjects(ea.structure, eb.structure, epsilon)
+		ElseIf IsString(ea) Then
+			equal = StringsEqual(ea.stringx, eb.stringx)
+		ElseIf IsArray(ea) Then
+			equal = JSONCompareArrays(ea.arrayx, eb.arrayx, epsilon)
+		ElseIf IsNumber(ea) Then
+			equal = EpsilonCompare(ea.number, eb.number, epsilon)
+		ElseIf IsNoType(ea) Then
+			equal = true
+		ElseIf IsBoolean(ea) Then
+			equal = ea.booleanx = eb.booleanx
+		End If
+	End If
+        
+	JSONCompareElements = equal
+End Function
+
+
+Public Function JSONCompareArrays(ea, eb, ByVal epsilon)
+	Dim equals
+	Dim i, length
+
+	equals = ea.length = eb.length
+
+	If equals Then
+		length = ea.length
+		i = 0
+		While i < length And equals
+			equals = JSONCompareElements(ArrayIndex(ea, i), ArrayIndex(eb, i), epsilon)
+			i = i + 1
+		WEnd
+	End If
+
+	JSONCompareArrays = equals
+End Function
+
+
+Public Function JSONCompareObjects(ea, eb, ByVal epsilon)
+	Dim equals
+	Dim akeys, bkeys, i
+	Dim keys
+	Dim key
+	Dim aFoundReference, bFoundReference
+	Dim eaValue, ebValue
+
+	Set aFoundReference = New BooleanReference
+	Set bFoundReference = New BooleanReference
+
+	akeys = StructKeys(ea)
+	bkeys = StructKeys(eb)
+
+	equals = akeys = bkeys
+
+	If equals Then
+		Set keys = GetStructKeys(ea)
+
+		i = 0
+		While i < keys.Count And equals
+			Set key = keys(i).stringx
+
+			Set eaValue = GetDataFromStructWithCheck(ea, key, aFoundReference)
+			Set ebValue = GetDataFromStructWithCheck(eb, key, bFoundReference)
+
+			If aFoundReference.booleanValue And bFoundReference.booleanValue Then
+				equals = JSONCompareElements(eaValue, ebValue, epsilon)
+			Else
+				equals = false
+			End If
+			i = i + 1
+		WEnd
+
+		Call FreeStringReferenceArray(keys)
+	End If
+
+	JSONCompareObjects = equals
+End Function
+
+
+Public Sub FreeStringReferenceArray(strings)
+	Dim i
+
+	i = 0
+	While i < strings.Count
+		Set strings(i) = Nothing
+		i = i + 1
+	WEnd
+	EraseArray strings 
+End Sub
+
+
+Public Function WriteJSON(data)
+	Dim writerSettings
+
+	Set writerSettings = CreateDefaultWriterSettings()
+
+	Set WriteJSON = WriteJSONWithOptions(data, writerSettings)
+End Function
+
+
+Public Function WriteJSONPretty(data)
+	Dim writerSettings
+
+	Set writerSettings = CreateDefaultWriterSettings()
+	writerSettings.prettyprint = true
+
+	Set WriteJSONPretty = WriteJSONWithOptions(data, writerSettings)
+End Function
+
+
+Public Function WriteJSONPrettyBinary(data)
+	Dim writerSettings
+
+	Set writerSettings = CreateDefaultWriterSettings()
+	writerSettings.prettyprint = true
+	writerSettings.humanreadable = true
+	writerSettings.binary = true
+
+	Set WriteJSONPrettyBinary = WriteJSONWithOptions(data, writerSettings)
+End Function
+
+
+Public Function CreateDefaultWriterSettings()
+	Dim writerSettings
+
+	Set writerSettings = New WriterSettings
+	writerSettings.prettyprint = false
+	writerSettings.humanreadable = false
+	writerSettings.binary = false
+	writerSettings.level = 0
+	Set writerSettings.indentString = toArray("  ")
+
+	Set CreateDefaultWriterSettings = writerSettings
+End Function
+
+
+Public Function WriteJSONWithOptions(data, settings)
+	Dim da
+	Dim result
+
+	Set da = CreateDynamicArrayCharacters()
+
+	If IsStructure(data) Then
+		Call WriteObject(data, da, settings)
+	ElseIf IsString(data) Then
+		Call WriteString(data, da)
+	ElseIf IsArray(data) Then
+		Call WriteArray(data, da, settings)
+	ElseIf IsNumber(data) Then
+		Call WriteNumber(data, da, settings)
+	ElseIf IsNoType(data) Then
+		Call DynamicArrayAddString(da, toArray("null"))
+	ElseIf IsBoolean(data) Then
+		Call WriteBooleanValue(data, da)
+	End If
+
+	Set result = DynamicArrayCharactersToArray(da)
+
+	Set WriteJSONWithOptions = result
+End Function
+
+
+Public Sub WriteBooleanValue(element, da)
+	If element.booleanx Then
+		Call DynamicArrayAddString(da, toArray("true"))
+	Else
+		Call DynamicArrayAddString(da, toArray("false"))
+	End If
+End Sub
+
+
+Public Sub WriteNumber(element, da, settings)
+	Dim numberString
+
+	If settings.humanreadable Then
+		If settings.binary Then
+			Set numberString = nNumberToHumanReadableBinary(element.number)
+		Else
+			Set numberString = nNumberToHumanReadableShortScale(element.number)
+		End If
+	ElseIf element.number <> 0 Then
+		If Abs(element.number) >= Pow(10, 15) Or Abs(element.number) <= Pow(10, -15) Then
+			Set numberString = nCreateStringScientificNotationDecimalFromNumber(element.number)
+		Else
+			Set numberString = nCreateStringDecimalFromNumber(element.number)
+		End If
+	Else
+		Set numberString = nCreateStringDecimalFromNumber(element.number)
+	End If
+
+	If settings.humanreadable Then
+		Call DynamicArrayAddCharacter(da, """")
+	End If
+	Call DynamicArrayAddString(da, numberString)
+	If settings.humanreadable Then
+		Call DynamicArrayAddCharacter(da, """")
+	End If
+End Sub
+
+
+Public Sub WriteArray(data, da, settings)
+	Dim s
+	Dim entry
+	Dim i, j
+
+	Call DynamicArrayAddString(da, toArray("["))
+
+	If settings.prettyprint Then
+		settings.level = settings.level + 1
+		If data.arrayx.length > 0 Then
+			Call DynamicArrayAddCharacter(da, "" + vblf + "")
+		End If
+	End If
+
+	i = 0
+	While i < data.arrayx.length
+		Set entry = ArrayIndex(data.arrayx, i)
+
+		If settings.prettyprint Then
+			j = 0
+			While j < settings.level
+				Call DynamicArrayAddString(da, settings.indentString)
+				j = j + 1
+			WEnd
+		End If
+
+		Set s = WriteJSONWithOptions(entry, settings)
+		Call DynamicArrayAddString(da, s)
+
+		If i + 1 <> data.arrayx.length Then
+			Call DynamicArrayAddString(da, toArray(","))
+			If settings.prettyprint Then
+				Call DynamicArrayAddString(da, toArray("" + vblf + ""))
+			End If
+		End If
+		i = i + 1
+	WEnd
+
+	If settings.prettyprint Then
+		settings.level = settings.level - 1
+		If data.arrayx.length > 0 Then
+			Call DynamicArrayAddCharacter(da, "" + vblf + "")
+			i = 0
+			While i < settings.level
+				Call DynamicArrayAddString(da, settings.indentString)
+				i = i + 1
+			WEnd
+		End If
+	End If
+
+	Call DynamicArrayAddString(da, toArray("]"))
+End Sub
+
+
+Public Sub WriteString(element, da)
+	Call DynamicArrayAddString(da, toArray(""""))
+	Set element.stringx = JSONEscapeString(element.stringx)
+	Call DynamicArrayAddString(da, element.stringx)
+	Call DynamicArrayAddString(da, toArray(""""))
+End Sub
+
+
+Public Function JSONEscapeString(stringx)
+	Dim i, length
+	Dim index, lettersReference
+	Dim ns, escaped
+
+	length = JSONEscapedStringLength(stringx)
+
+	Set ns = allocArray(length)
+	Set index = CreateNumberReference(0)
+	Set lettersReference = CreateNumberReference(0)
+
+	i = 0
+	While i < stringx.Count
+		If JSONMustBeEscaped(stringx(i), lettersReference) Then
+			Set escaped = JSONEscapeCharacter(stringx(i))
+			Call strWriteStringToStingStream(ns, index, escaped)
+		Else
+			Call strWriteCharacterToStingStream(ns, index, stringx(i))
+		End If
+		i = i + 1
+	WEnd
+
+	Set JSONEscapeString = ns
+End Function
+
+
+Public Function JSONEscapedStringLength(stringx)
+	Dim lettersReference
+	Dim i, length
+
+	Set lettersReference = CreateNumberReference(0)
+	length = 0
+
+	i = 0
+	While i < stringx.Count
+		If JSONMustBeEscaped(stringx(i), lettersReference) Then
+			length = length + lettersReference.numberValue
+		Else
+			length = length + 1
+		End If
+		i = i + 1
+	WEnd
+	JSONEscapedStringLength = length
+End Function
+
+
+Public Function JSONEscapeCharacter(ByVal c)
+	Dim code
+	Dim escaped
+	Dim hexNumber
+	Dim q, rs, s, b, f, n, r, t
+
+	code = Ascw(c)
+
+	q = 34
+	rs = 92
+	s = 47
+	b = 8
+	f = 12
+	n = 10
+	r = 13
+	t = 9
+
+	Set hexNumber = New StringReference
+
+	If code = q Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = """"
+	ElseIf code = rs Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "\"
+	ElseIf code = s Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "/"
+	ElseIf code = b Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "b"
+	ElseIf code = f Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "f"
+	ElseIf code = n Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "n"
+	ElseIf code = r Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "r"
+	ElseIf code = t Then
+		Set escaped = allocArray(2)
+		escaped(0) = "\"
+		escaped(1) = "t"
+	ElseIf code >= 0 And code <= 31 Then
+		Set escaped = allocArray(6)
+		escaped(0) = "\"
+		escaped(1) = "u"
+		escaped(2) = "0"
+		escaped(3) = "0"
+
+		Call nCreateStringFromNumberWithCheck(code, 16, hexNumber)
+
+		If hexNumber.stringx.Count = 1 Then
+			escaped(4) = "0"
+			escaped(5) = hexNumber.stringx(0)
+		ElseIf hexNumber.stringx.Count = 2 Then
+			escaped(4) = hexNumber.stringx(0)
+			escaped(5) = hexNumber.stringx(1)
+		End If
+	Else
+		Set escaped = allocArray(1)
+		escaped(0) = c
+	End If
+
+	Set JSONEscapeCharacter = escaped
+End Function
+
+
+Public Function JSONMustBeEscaped(ByVal c, letters)
+	Dim code
+	Dim mustBeEscaped
+	Dim q, rs, s, b, f, n, r, t
+
+	code = Ascw(c)
+	mustBeEscaped = false
+
+	q = 34
+	rs = 92
+	s = 47
+	b = 8
+	f = 12
+	n = 10
+	r = 13
+	t = 9
+
+	If code = q Or code = rs Or code = s Or code = b Or code = f Or code = n Or code = r Or code = t Then
+		mustBeEscaped = true
+		letters.numberValue = 2
+	ElseIf code >= 0 And code <= 31 Then
+		mustBeEscaped = true
+		letters.numberValue = 6
+	ElseIf code >= Pow(2, 16) Then
+		mustBeEscaped = true
+		letters.numberValue = 6
+	End If
+
+	JSONMustBeEscaped = mustBeEscaped
+End Function
+
+
+Public Sub WriteObject(data, da, settings)
+	Dim s, key, escapedKey
+	Dim i, j
+	Dim keys
+	Dim objectElement
+
+	Call DynamicArrayAddString(da, toArray("{"))
+
+	Set keys = GetStructKeys(data.structure)
+
+	If settings.prettyprint Then
+		settings.level = settings.level + 1
+		If keys.Count > 0 Then
+			Call DynamicArrayAddCharacter(da, "" + vblf + "")
+		End If
+	End If
+
+	i = 0
+	While i < keys.Count
+		Set key = keys(i).stringx
+		Set objectElement = GetDataFromStruct(data.structure, key)
+
+		If settings.prettyprint Then
+			j = 0
+			While j < settings.level
+				Call DynamicArrayAddString(da, settings.indentString)
+				j = j + 1
+			WEnd
+		End If
+
+		Set escapedKey = JSONEscapeString(key)
+		Call DynamicArrayAddString(da, toArray(""""))
+		Call DynamicArrayAddString(da, escapedKey)
+		Call DynamicArrayAddString(da, toArray(""""))
+		Call DynamicArrayAddString(da, toArray(":"))
+
+		If settings.prettyprint Then
+			Call DynamicArrayAddString(da, toArray(" "))
+		End If
+
+		Set s = WriteJSONWithOptions(objectElement, settings)
+		Call DynamicArrayAddString(da, s)
+
+		If i + 1 <> keys.Count Then
+			Call DynamicArrayAddString(da, toArray(","))
+			If settings.prettyprint Then
+				Call DynamicArrayAddCharacter(da, "" + vblf + "")
+			End If
+		End If
+		i = i + 1
+	WEnd
+
+	If settings.prettyprint Then
+		settings.level = settings.level - 1
+		If keys.Count > 0 Then
+			Call DynamicArrayAddCharacter(da, "" + vblf + "")
+			i = 0
+			While i < settings.level
+				Call DynamicArrayAddString(da, settings.indentString)
+				i = i + 1
+			WEnd
+		End If
+	End If
+
+	Call DynamicArrayAddCharacter(da, "}")
+End Sub
+
+
+Public Function WriteJSONFromStruct(struct)
+	Dim data
+	Dim json
+
+	Set data = CreateNewStructData()
+	Set data.structure = struct
+	Set json = WriteJSON(data)
+
+	Set WriteJSONFromStruct = json
+End Function
+
+
+Public Function WriteJSONFromArray(arrayx)
+	Dim data
+	Dim json
+
+	Set data = CreateNewArrayData()
+	Set data.arrayx = arrayx
+	Set json = WriteJSON(data)
+
+	Set WriteJSONFromArray = json
+End Function
+
+
+Public Function ReadJSON(stringx, dataReference, message)
+	Dim tokenArrayReference
+	Dim success
+
+	' Tokenize.
+	Set tokenArrayReference = New StringArrayReference
+	success = JSONTokenize(stringx, tokenArrayReference, message)
+
+	If success Then
+		' Parse.
+		success = GetJSONValue(tokenArrayReference.stringArray, dataReference, message)
+	End If
+
+	ReadJSON = success
+End Function
+
+
+Public Function GetJSONValue(tokens, dataReference, message)
+	Dim i
+	Dim success
+
+	Set i = CreateNumberReference(0)
+	success = GetJSONValueRecursive(tokens, i, 0, dataReference, message)
+
+	GetJSONValue = success
+End Function
+
+
+Public Function GetJSONValueRecursive(tokens, i, ByVal depth, dataReference, message)
+	Dim str, substr, token
+	Dim stringToDecimalResult
+	Dim success
+
+	success = true
+	Set token = tokens(i.numberValue).stringx
+
+	If StringsEqual(token, toArray("{")) Then
+		success = GetJSONObject(tokens, i, depth + 1, dataReference, message)
+	ElseIf StringsEqual(token, toArray("[")) Then
+		success = GetJSONArray(tokens, i, depth + 1, dataReference, message)
+	ElseIf StringsEqual(token, toArray("true")) Then
+		Set dataReference.data = CreateBooleanData(true)
+		i.numberValue = i.numberValue + 1
+	ElseIf StringsEqual(token, toArray("false")) Then
+		Set dataReference.data = CreateBooleanData(false)
+		i.numberValue = i.numberValue + 1
+	ElseIf StringsEqual(token, toArray("null")) Then
+		Set dataReference.data = CreateNoTypeData()
+		i.numberValue = i.numberValue + 1
+	ElseIf charIsNumber(token(0)) Or token(0) = "-" Then
+		stringToDecimalResult = nCreateNumberFromDecimalString(token)
+		Set dataReference.data = CreateNumberData(stringToDecimalResult)
+		i.numberValue = i.numberValue + 1
+	ElseIf token(0) = """" Then
+		Set substr = strSubstring(token, 1, token.Count - 1)
+		Set dataReference.data = CreateStringData(substr)
+		i.numberValue = i.numberValue + 1
+	Else
+		Set str = toArray("")
+		Set str = strConcatenateString(str, toArray("Invalid token first in value: "))
+		Set str = strAppendString(str, token)
+		Set message.stringx = str
+		success = false
+	End If
+
+	If success And depth = 0 Then
+		If StringsEqual(tokens(i.numberValue).stringx, toArray("<end>")) Then
+		Else
+			Set message.stringx = toArray("The outer value cannot have any tokens following it.")
+			success = false
+		End If
+	End If
+
+	GetJSONValueRecursive = success
+End Function
+
+
+Public Function GetJSONObject(tokens, i, ByVal depth, dataReference, message)
+	Dim data, value
+	Dim done, success
+	Dim key, colon, comma, closeCurly
+	Dim keystring, str
+	Dim valueReference
+
+	Set data = CreateNewStructData()
+	Set valueReference = New DataReference
+	success = true
+	i.numberValue = i.numberValue + 1
+
+	If Not StringsEqual(tokens(i.numberValue).stringx, toArray("}")) Then
+		done = false
+
+		
+		While Not done And success
+			Set key = tokens(i.numberValue).stringx
+
+			If key(0) = """" Then
+				i.numberValue = i.numberValue + 1
+				Set colon = tokens(i.numberValue).stringx
+				If StringsEqual(colon, toArray(":")) Then
+					i.numberValue = i.numberValue + 1
+					success = GetJSONValueRecursive(tokens, i, depth, valueReference, message)
+
+					If success Then
+						Set keystring = strSubstring(key, 1, key.Count - 1)
+						Set value = valueReference.data
+
+						Call AddDataToStruct(data.structure, keystring, value)
+
+						Set comma = tokens(i.numberValue).stringx
+						If StringsEqual(comma, toArray(",")) Then
+							' OK
+							i.numberValue = i.numberValue + 1
+						Else
+							done = true
+						End If
+					End If
+				Else
+					Set str = toArray("")
+					Set str = strConcatenateString(str, toArray("Expected colon after key in object: "))
+					Set str = strAppendString(str, colon)
+					Set message.stringx = str
+
+					success = false
+					done = true
+				End If
+			Else
+				Set message.stringx = toArray("Expected string as key in object.")
+
+				done = true
+				success = false
+			End If
+		WEnd
+	End If
+
+	If success Then
+		Set closeCurly = tokens(i.numberValue).stringx
+
+		If StringsEqual(closeCurly, toArray("}")) Then
+			' OK
+			Set dataReference.data = data
+			i.numberValue = i.numberValue + 1
+		Else
+			Set message.stringx = toArray("Expected close curly brackets at end of object value.")
+			success = false
+		End If
+	End If
+
+	Set valueReference = Nothing
+
+	GetJSONObject = success
+End Function
+
+
+Public Function GetJSONArray(tokens, i, ByVal depth, dataReference, message)
+	Dim data, value
+	Dim nextToken, comma
+	Dim done, success
+	Dim valueReference
+
+	i.numberValue = i.numberValue + 1
+
+	Set valueReference = New DataReference
+	success = true
+	Set data = CreateNewArrayData()
+
+	Set nextToken = tokens(i.numberValue).stringx
+
+	If Not StringsEqual(nextToken, toArray("]")) Then
+		done = false
+		
+		While Not done And success
+			success = GetJSONValueRecursive(tokens, i, depth, valueReference, message)
+
+			If success Then
+				Set value = valueReference.data
+				Call AddDataToArray(data.arrayx, value)
+
+				Set comma = tokens(i.numberValue).stringx
+
+				If StringsEqual(comma, toArray(",")) Then
+					' OK
+					i.numberValue = i.numberValue + 1
+				Else
+					done = true
+				End If
+			End If
+		WEnd
+	End If
+
+	Set nextToken = tokens(i.numberValue).stringx
+	If StringsEqual(nextToken, toArray("]")) Then
+		' OK
+		i.numberValue = i.numberValue + 1
+	Else
+		Set message.stringx = toArray("Expected close square bracket at end of array.")
+		success = false
+	End If
+
+	Set dataReference.data = data
+	Set valueReference = Nothing
+
+	GetJSONArray = success
+End Function
+
+
+Public Function JSONTokenize(json, tokensReference, message)
+	Dim i
+	Dim c
+	Dim str
+	Dim stringReference, tokenReference
+	Dim stringLength
+	Dim success
+	Dim ll
+
+	Set ll = CreateArray()
+	success = true
+
+	Set stringLength = New NumberReference
+	Set tokenReference = New StringReference
+
+	i = 0
+	While i < json.Count And success
+		c = json(i)
+
+		If c = "{" Then
+			Call AddStringToArray(ll, toArray("{"))
+			i = i + 1
+		ElseIf c = "}" Then
+			Call AddStringToArray(ll, toArray("}"))
+			i = i + 1
+		ElseIf c = "[" Then
+			Call AddStringToArray(ll, toArray("["))
+			i = i + 1
+		ElseIf c = "]" Then
+			Call AddStringToArray(ll, toArray("]"))
+			i = i + 1
+		ElseIf c = ":" Then
+			Call AddStringToArray(ll, toArray(":"))
+			i = i + 1
+		ElseIf c = "," Then
+			Call AddStringToArray(ll, toArray(","))
+			i = i + 1
+		ElseIf c = "f" Then
+			success = GetJSONPrimitiveName(json, i, message, toArray("false"), tokenReference)
+			If success Then
+				Call AddStringToArray(ll, toArray("false"))
+				i = i + toArray("false").Count
+			End If
+		ElseIf c = "t" Then
+			success = GetJSONPrimitiveName(json, i, message, toArray("true"), tokenReference)
+			If success Then
+				Call AddStringToArray(ll, toArray("true"))
+				i = i + toArray("true").Count
+			End If
+		ElseIf c = "n" Then
+			success = GetJSONPrimitiveName(json, i, message, toArray("null"), tokenReference)
+			If success Then
+				Call AddStringToArray(ll, toArray("null"))
+				i = i + toArray("null").Count
+			End If
+		ElseIf c = " " Or c = "" + vblf + "" Or c = "" + Chrw(9) + "" Or c = "" + vbcr + "" Then
+			' Skip.
+			i = i + 1
+		ElseIf c = """" Then
+			success = GetJSONString(json, i, tokenReference, stringLength, message)
+			If success Then
+				Call AddStringToArray(ll, tokenReference.stringx)
+				i = i + stringLength.numberValue
+			End If
+		ElseIf IsJSONNumberCharacter(c) Then
+			success = GetJSONNumberToken(json, i, tokenReference, message)
+			If success Then
+				Call AddStringToArray(ll, tokenReference.stringx)
+				i = i + tokenReference.stringx.Count
+			End If
+		Else
+			Set str = strConcatenateCharacter(toArray("Invalid start of Token: "), c)
+			Set stringReference = CreateStringReference(str)
+			Set message.stringx = stringReference.stringx
+			i = i + 1
+			success = false
+		End If
+	WEnd
+
+	If success Then
+		Call AddStringToArray(ll, toArray("<end>"))
+		Set tokensReference.stringArray = ToStaticStringArray(ll)
+		Call FreeArray(ll)
+	End If
+
+	JSONTokenize = success
+End Function
+
+
+Public Function GetJSONNumberToken(json, ByVal start, tokenReference, message)
+	Dim c
+	Dim endx, i
+	Dim done, success
+	Dim numberString
+
+	endx = json.Count
+	done = false
+
+	i = start
+	While i < json.Count And Not done
+		c = json(i)
+		If Not IsJSONNumberCharacter(c) Then
+			done = true
+			endx = i
+		End If
+		i = i + 1
+	WEnd
+
+	Set numberString = strSubstring(json, start, endx)
+
+	success = IsValidJSONNumber(numberString, message)
+
+	Set tokenReference.stringx = numberString
+
+	GetJSONNumberToken = success
+End Function
+
+
+Public Function IsValidJSONNumber(n, message)
+	Dim success
+	Dim i
+
+	i = 0
+
+	' JSON allows an optional negative sign.
+	If n(i) = "-" Then
+		i = i + 1
+	End If
+
+	If i < n.Count Then
+		success = IsValidJSONNumberAfterSign(n, i, message)
+	Else
+		success = false
+		Set message.stringx = toArray("Number must contain at least one digit.")
+	End If
+
+	IsValidJSONNumber = success
+End Function
+
+
+Public Function IsValidJSONNumberAfterSign(n, ByVal i, message)
+	Dim success
+
+	If charIsNumber(n(i)) Then
+		' 0 first means only 0.
+		If n(i) = "0" Then
+			i = i + 1
+		Else
+			' 1-9 first, read following digits.
+			i = IsValidJSONNumberAdvancePastDigits(n, i)
+		End If
+
+		If i < n.Count Then
+			success = IsValidJSONNumberFromDotOrExponent(n, i, message)
+		Else
+			' If integer, we are done now.
+			success = true
+		End If
+	Else
+		success = false
+		Set message.stringx = toArray("A number must start with 0-9 (after the optional sign).")
+	End If
+
+	IsValidJSONNumberAfterSign = success
+End Function
+
+
+Public Function IsValidJSONNumberAdvancePastDigits(n, ByVal i)
+	Dim done
+
+	i = i + 1
+	done = false
+	
+	While i < n.Count And Not done
+		If charIsNumber(n(i)) Then
+			i = i + 1
+		Else
+			done = true
+		End If
+	WEnd
+
+	IsValidJSONNumberAdvancePastDigits = i
+End Function
+
+
+Public Function IsValidJSONNumberFromDotOrExponent(n, ByVal i, message)
+	Dim wasDotAndOrE, success
+
+	wasDotAndOrE = false
+	success = true
+
+	If n(i) = "." Then
+		i = i + 1
+		wasDotAndOrE = true
+
+		If i < n.Count Then
+			If charIsNumber(n(i)) Then
+				' Read digits following decimal point.
+				i = IsValidJSONNumberAdvancePastDigits(n, i)
+
+				If i = n.Count Then
+					' If non-scientific decimal number, we are done.
+					success = true
+				End If
+			Else
+				success = false
+				Set message.stringx = toArray("There must be numbers after the decimal point.")
+			End If
+		Else
+			success = false
+			Set message.stringx = toArray("There must be numbers after the decimal point.")
+		End If
+	End If
+
+	If i < n.Count And success Then
+		If n(i) = "e" Or n(i) = "E" Then
+			wasDotAndOrE = true
+			success = IsValidJSONNumberFromExponent(n, i, message)
+		Else
+			success = false
+			Set message.stringx = toArray("Expected e or E.")
+		End If
+	ElseIf i = n.Count And success Then
+		' If number with decimal point.
+		success = true
+	Else
+		success = false
+		Set message.stringx = toArray("There must be numbers after the decimal point.")
+	End If
+
+	If wasDotAndOrE Then
+	Else
+		success = false
+		Set message.stringx = toArray("Exprected decimal point or e or E.")
+	End If
+
+	IsValidJSONNumberFromDotOrExponent = success
+End Function
+
+
+Public Function IsValidJSONNumberFromExponent(n, ByVal i, message)
+	Dim success
+
+	i = i + 1
+
+	If i < n.Count Then
+		' The exponent sign can either + or -,
+		If n(i) = "+" Or n(i) = "-" Then
+			i = i + 1
+		End If
+
+		If i < n.Count Then
+			If charIsNumber(n(i)) Then
+				' Read digits following decimal point.
+				i = IsValidJSONNumberAdvancePastDigits(n, i)
+
+				If i = n.Count Then
+					' We found scientific number.
+					success = true
+				Else
+					success = false
+					Set message.stringx = toArray("There was characters following the exponent.")
+				End If
+			Else
+				success = false
+				Set message.stringx = toArray("There must be a digit following the optional exponent sign.")
+			End If
+		Else
+			success = false
+			Set message.stringx = toArray("There must be a digit following optional the exponent sign.")
+		End If
+	Else
+		success = false
+		Set message.stringx = toArray("There must be a sign or a digit following e or E.")
+	End If
+
+	IsValidJSONNumberFromExponent = success
+End Function
+
+
+Public Function IsJSONNumberCharacter(ByVal c)
+	Dim numericCharacters
+	Dim found
+	Dim i
+
+	Set numericCharacters = toArray("0123456789.-+eE")
+
+	found = false
+
+	i = 0
+	While i < numericCharacters.Count
+		If numericCharacters(i) = c Then
+			found = true
+		End If
+		i = i + 1
+	WEnd
+
+	IsJSONNumberCharacter = found
+End Function
+
+
+Public Function GetJSONPrimitiveName(stringx, ByVal start, message, primitive, tokenReference)
+	Dim c, p
+	Dim done, success
+	Dim i
+	Dim str, token
+
+	done = false
+	success = true
+
+	Set token = toArray("")
+
+	i = start
+	While i < stringx.Count And ((i - start) < primitive.Count) And Not done
+		c = stringx(i)
+		p = primitive(i - start)
+		If c = p Then
+			' OK
+			If (i + 1 - start) = primitive.Count Then
+				done = true
+			End If
+		Else
+			Set str = toArray("")
+			Set str = strConcatenateString(str, toArray("Primitive invalid: "))
+			Set str = strAppendCharacter(str, c)
+			Set str = strAppendString(str, toArray(" vs "))
+			Set str = strAppendCharacter(str, p)
+
+			Set message.stringx = str
+			done = true
+			success = false
+		End If
+		i = i + 1
+	WEnd
+
+	If done Then
+		If StringsEqual(primitive, toArray("false")) Then
+			Set token = toArray("false")
+		End If
+		If StringsEqual(primitive, toArray("true")) Then
+			Set token = toArray("true")
+		End If
+		If StringsEqual(primitive, toArray("null")) Then
+			Set token = toArray("null")
+		End If
+	Else
+		Set message.stringx = toArray("Primitive invalid")
+		success = false
+	End If
+
+	Set tokenReference.stringx = token
+
+	GetJSONPrimitiveName = success
+End Function
+
+
+Public Function GetJSONString(json, ByVal start, tokenReference, stringLengthReference, message)
+	Dim success, done
+	Dim stringx, hex
+	Dim characterCount, hexReference
+	Dim i, l, c
+	Dim errorMessage
+
+	Set characterCount = CreateNumberReference(0)
+	Set hex = CreateString(4, "0")
+	Set hexReference = New NumberReference
+	Set errorMessage = New StringReference
+
+	success = IsValidJSONStringInJSON(json, start, characterCount, stringLengthReference, message)
+
+	If success Then
+		l = characterCount.numberValue
+		Set stringx = allocArray(l)
+
+		c = 0
+		stringx(c) = """"
+		c = c + 1
+
+		done = false
+		i = start + 1
+		While Not done
+			If json(i) = "\" Then
+				i = i + 1
+				If json(i) = """" Or json(i) = "\" Or json(i) = "/" Then
+					stringx(c) = json(i)
+					c = c + 1
+				ElseIf json(i) = "b" Then
+					stringx(c) = Chrw(8)
+					c = c + 1
+				ElseIf json(i) = "f" Then
+					stringx(c) = Chrw(12)
+					c = c + 1
+				ElseIf json(i) = "n" Then
+					stringx(c) = Chrw(10)
+					c = c + 1
+				ElseIf json(i) = "r" Then
+					stringx(c) = Chrw(13)
+					c = c + 1
+				ElseIf json(i) = "t" Then
+					stringx(c) = Chrw(9)
+					c = c + 1
+				ElseIf json(i) = "u" Then
+					i = i + 1
+					hex(0) = charToUpperCase(json(i + 0))
+					hex(1) = charToUpperCase(json(i + 1))
+					hex(2) = charToUpperCase(json(i + 2))
+					hex(3) = charToUpperCase(json(i + 3))
+					Call nCreateNumberFromStringWithCheck(hex, 16, hexReference, errorMessage)
+					stringx(c) = Chrw(hexReference.numberValue)
+					i = i + 3
+					c = c + 1
+				End If
+			ElseIf json(i) = """" Then
+				stringx(c) = json(i)
+				c = c + 1
+				done = true
+			Else
+				stringx(c) = json(i)
+				c = c + 1
+			End If
+			i = i + 1
+		WEnd
+
+		Set tokenReference.stringx = stringx
+		success = true
+	Else
+		Set message.stringx = toArray("End of string was not found.")
+		success = false
+	End If
+
+	GetJSONString = success
+End Function
+
+
+Public Function IsValidJSONString(jsonString, message)
+	Dim valid
+	Dim numberReference, stringLength
+
+	Set numberReference = New NumberReference
+	Set stringLength = New NumberReference
+
+	valid = IsValidJSONStringInJSON(jsonString, 0, numberReference, stringLength, message)
+
+	IsValidJSONString = valid
+End Function
+
+
+Public Function IsValidJSONStringInJSON(json, ByVal start, characterCount, stringLengthReference, message)
+	Dim success, done
+	Dim i, j
+	Dim c
+
+	success = true
+	done = false
+
+	characterCount.numberValue = 1
+
+	i = start + 1
+	While i < json.Count And Not done And success
+		If Not IsJSONIllegalControllCharacter(json(i)) Then
+			If json(i) = "\" Then
+				i = i + 1
+				If i < json.Count Then
+					If json(i) = """" Or json(i) = "\" Or json(i) = "/" Or json(i) = "b" Or json(i) = "f" Or json(i) = "n" Or json(i) = "r" Or json(i) = "t" Then
+						characterCount.numberValue = characterCount.numberValue + 1
+					ElseIf json(i) = "u" Then
+						If i + 4 < json.Count Then
+							j = 0
+							While j < 4 And success
+								c = json(i + j + 1)
+								If nCharacterIsNumberCharacterInBase(c, 16) Or c = "a" Or c = "b" Or c = "c" Or c = "d" Or c = "e" Or c = "f" Then
+								Else
+									success = false
+									Set message.stringx = toArray("\u must be followed by four hexadecimal digits.")
+								End If
+								j = j + 1
+							WEnd
+							characterCount.numberValue = characterCount.numberValue + 1
+							i = i + 4
+						Else
+							success = false
+							Set message.stringx = toArray("\u must be followed by four characters.")
+						End If
+					Else
+						success = false
+						Set message.stringx = toArray("Escaped character invalid.")
+					End If
+				Else
+					success = false
+					Set message.stringx = toArray("There must be at least two character after string escape.")
+				End If
+			ElseIf json(i) = """" Then
+				characterCount.numberValue = characterCount.numberValue + 1
+				done = true
+			Else
+				characterCount.numberValue = characterCount.numberValue + 1
+			End If
+		Else
+			success = false
+			Set message.stringx = toArray("Unicode code points 0-31 not allowed in JSON string.")
+		End If
+		i = i + 1
+	WEnd
+
+	If done Then
+		stringLengthReference.numberValue = i - start
+	Else
+		success = false
+		Set message.stringx = toArray("String must end with "".")
+	End If
+
+	IsValidJSONStringInJSON = success
+End Function
+
+
+Public Function IsJSONIllegalControllCharacter(ByVal c)
+	Dim cnr
+	Dim isControll
+
+	cnr = Ascw(c)
+
+	If cnr >= 0 And cnr < 32 Then
+		isControll = true
+	Else
+		isControll = false
+	End If
+
+	IsJSONIllegalControllCharacter = isControll
+End Function
+
+
+Public Function IsValidJSON(json, message)
+	Dim success
+	Dim elementReference
+
+	Set elementReference = New DataReference
+
+	success = ReadJSON(json, elementReference, message)
+
+	If success Then
+		Call FreeData(elementReference.data)
+	End If
+
+	IsValidJSON = success
+End Function
+
+
+Public Function ComputeJSONStringLength(data)
+	Dim result
+
+	result = 0
+
+	If IsStructure(data) Then
+		result = result + ComputeJSONObjectStringLength(data)
+	ElseIf IsString(data) Then
+		result = JSONEscapedStringLength(data.stringx) + 2
+	ElseIf IsArray(data) Then
+		result = result + ComputeJSONArrayStringLength(data)
+	ElseIf IsNumber(data) Then
+		result = result + ComputeJSONNumberStringLength(data)
+	ElseIf IsNoType(data) Then
+		result = result + toArray("null").Count
+	ElseIf IsBoolean(data) Then
+		result = result + ComputeJSONBooleanStringLength(data)
+	End If
+
+	ComputeJSONStringLength = result
+End Function
+
+
+Public Function ComputeJSONBooleanStringLength(data)
+	Dim result
+
+	If data.booleanx Then
+		result = toArray("true").Count
+	Else
+		result = toArray("false").Count
+	End If
+
+	ComputeJSONBooleanStringLength = result
+End Function
+
+
+Public Function ComputeJSONNumberStringLength(data)
+	Dim length
+	Dim a
+
+	If data.number <> 0 Then
+		If Abs(data.number) >= Pow(10, 15) Or Abs(data.number) <= Pow(10, -15) Then
+			Set a = nCreateStringScientificNotationDecimalFromNumber(data.number)
+			length = a.Count
+		Else
+			Set a = nCreateStringDecimalFromNumber(data.number)
+			length = a.Count
+		End If
+	Else
+		length = 1
+	End If
+
+	ComputeJSONNumberStringLength = length
+End Function
+
+
+Public Function ComputeJSONArrayStringLength(data)
+	Dim arrayElement
+	Dim i
+	Dim length
+
+	length = 1
+
+	i = 0
+	While i < data.arrayx.length
+		Set arrayElement = ArrayIndex(data.arrayx, i)
+
+		length = length + ComputeJSONStringLength(arrayElement)
+
+		If i + 1 <> data.arrayx.length Then
+			length = length + 1
+		End If
+		i = i + 1
+	WEnd
+
+	length = length + 1
+
+	ComputeJSONArrayStringLength = length
+End Function
+
+
+Public Function ComputeJSONObjectStringLength(data)
+	Dim key
+	Dim i
+	Dim keys
+	Dim objectElement
+	Dim length
+
+	length = 1
+
+	Set keys = GetStructKeys(data.structure)
+	i = 0
+	While i < keys.Count
+		Set key = keys(i).stringx
+		Set objectElement = GetDataFromStruct(data.structure, key)
+
+		length = length + 1
+		length = length + JSONEscapedStringLength(key)
+		length = length + 1
+		length = length + 1
+
+		length = length + ComputeJSONStringLength(objectElement)
+
+		If i + 1 <> keys.Count Then
+			length = length + 1
+		End If
+		i = i + 1
+	WEnd
+
+	length = length + 1
+
+	ComputeJSONObjectStringLength = length
+End Function
+
+
+Public Sub TestEscaper(failures)
+	Dim c
+	Dim letters
+	Dim mustBeEscaped
+	Dim escaped
+
+	Set letters = CreateNumberReference(0)
+
+	c = Chrw(9)
+	mustBeEscaped = JSONMustBeEscaped(c, letters)
+	Call AssertTrue(mustBeEscaped, failures)
+	Call AssertEquals(letters.numberValue, 2, failures)
+
+	Set escaped = JSONEscapeCharacter(c)
+	Call AssertStringEquals(escaped, toArray("\t"), failures)
+
+	c = Chrw(0)
+	mustBeEscaped = JSONMustBeEscaped(c, letters)
+	Call AssertTrue(mustBeEscaped, failures)
+	Call AssertEquals(letters.numberValue, 6, failures)
+
+	Set escaped = JSONEscapeCharacter(c)
+	Call AssertStringEquals(escaped, toArray("\u0000"), failures)
+End Sub
+
+
+Public Function mapTo(root)
+	Dim example
+
+	Set example = New Example
+	Set example.a = GetDataFromStruct(root.structure, toArray("a")).stringx
+	Set example.b = mapbTo(GetDataFromStruct(root.structure, toArray("b")).arrayx)
+	Set example.x = mapXTo(GetDataFromStruct(root.structure, toArray("x")).structure)
+
+	Set mapTo = example
+End Function
+
+
+Public Function mapXTo(objectx)
+	Dim x
+
+	Set x = New X
+
+	If IsNoType(GetDataFromStruct(objectx, toArray("x1"))) Then
+		x.x1IsNull = true
+		Set x.x1 = toArray("")
+	End If
+
+	x.x2 = GetDataFromStruct(objectx, toArray("x2")).booleanx
+	x.x3 = GetDataFromStruct(objectx, toArray("x3")).booleanx
+
+	Set mapXTo = x
+End Function
+
+
+Public Function mapbTo(arrayx)
+	Dim b
+	Dim i
+
+	Set b = allocArray(ArrayLength(arrayx))
+
+	i = 0
+	While i < arrayx.length
+		b(i) = ArrayIndex(arrayx, i).number
+		i = i + 1
+	WEnd
+
+	Set mapbTo = b
+End Function
+
+
+Public Sub TestWriter(failures)
+	Dim stringx
+	Dim root, e
+	Dim example
+	Dim da
+	Dim settings
+
+	Set root = CreateExampleJSON()
+
+	Set stringx = WriteJSON(root)
+
+	Call AssertEquals(stringx.Count, 66, failures)
+
+	' Does not work with Java Maps..
+	Set example = mapTo(root)
+
+	Call AssertStringEquals(toArray("hei"), example.a, failures)
+	Call AssertTrue(example.x.x1IsNull, failures)
+	Call AssertTrue(example.x.x2, failures)
+	Call AssertFalse(example.x.x3, failures)
+	Call AssertEquals(1.2, example.b(0), failures)
+	Call AssertEquals(0.1, example.b(1), failures)
+	Call AssertEquals(100, example.b(2), failures)
+
+	Call FreeData(root)
+
+	Set e = CreateNumberData(0)
+	Set da = CreateDynamicArrayCharacters()
+
+	Set settings = CreateDefaultWriterSettings()
+	Call WriteNumber(e, da, settings)
+
+	Set stringx = DynamicArrayCharactersToArray(da)
+	Call AssertStringEquals(toArray("0"), stringx, failures)
+End Sub
+
+
+Public Function CreateExampleJSON()
+	Dim root
+	Dim innerObject
+	Dim arrayx
+
+	Set root = CreateNewStructData()
+
+	Set innerObject = CreateStructure()
+
+	Call AddDataToStruct(innerObject, toArray("x1"), CreateNoTypeData())
+	Call AddBooleanToStruct(innerObject, toArray("x2"), true)
+	Call AddBooleanToStruct(innerObject, toArray("x3"), false)
+
+	Set arrayx = CreateArray()
+	Call AddNumberToArray(arrayx, 1.2)
+	Call AddNumberToArray(arrayx, 0.1)
+	Call AddNumberToArray(arrayx, 100)
+
+	Call AddStringToStruct(root.structure, toArray("a"), toArray("hei"))
+	Call AddArrayToStruct(root.structure, toArray("b"), arrayx)
+	Call AddStructToStruct(root.structure, toArray("x"), innerObject)
+
+	Set CreateExampleJSON = root
+End Function
+
+
+Public Sub TestWriterEscape(failures)
+	Dim stringx
+	Dim root
+
+	Set root = CreateStringData(toArray("" + Chrw(9) + "" + vblf + ""))
+
+	Set stringx = WriteJSON(root)
+
+	Call AssertEquals(stringx.Count, 6, failures)
+
+	Call AssertStringEquals(toArray("""\t\n"""), stringx, failures)
+
+	Call FreeData(root)
+End Sub
+
+
+Public Sub TestWriter2(failures)
+	Dim e
+	Dim result, json
+	Dim obj
+	Dim message
+	Dim success
+
+	Set obj = New DataReference
+	Set message = New StringReference
+	Set json = toArray("{""test1"":0,""Test2"":0,""test3"":0}")
+	success = ReadJSON(json, obj, message)
+
+	Call AssertTrue(success, failures)
+
+	If success Then
+		Set e = obj.data
+
+		Set result = WriteJSON(e)
+
+		Call AssertStringEquals(result, json, failures)
+	End If
+End Sub
+
+
+Public Sub TestWriter3(failures)
+	Dim e
+	Dim result
+
+	Set e = CreateNewStructData()
+	Call AddStringToStruct(e.structure, toArray("example.com/style.js"), toArray("console.log(""hello world"")"))
+
+	Set result = WriteJSON(e)
+
+	Call AssertStringEquals(result, toArray("{""example.com\/style.js"":""console.log(\""hello world\"")""}"), failures)
+End Sub
+
+
+Public Sub TestReader(failures)
+	Dim json
+	Dim stringx, string2
+	Dim message
+	Dim elementReference
+	Dim success
+
+	Set json = CreateExampleJSON()
+	Set stringx = WriteJSON(json)
+	Set elementReference = New DataReference
+
+	Set message = CreateStringReference(toArray(""))
+
+	success = ReadJSON(stringx, elementReference, message)
+	Call AssertTrue(success, failures)
+
+	If success Then
+		Set json = elementReference.data
+		Set string2 = WriteJSON(json)
+
+		Call AssertEquals(stringx.Count, string2.Count, failures)
+	End If
+End Sub
+
+
+Public Sub Test2(failures)
+	Dim stringx, string2
+	Dim message
+	Dim json
+	Dim elementReference
+	Dim success
+
+	Set stringx = strConcatenateString(toArray("{"), toArray("""name"":""base64"","))
+	Set stringx = strAppendString(stringx, toArray("""version"":""0.1.0"","))
+	Set stringx = strAppendString(stringx, toArray("""business namespace"":""no.inductive.idea10.programs"","))
+	Set stringx = strAppendString(stringx, toArray("""scientific namespace"":""computerscience.algorithms.base64"","))
+	Set stringx = strAppendString(stringx, toArray("""imports"":["))
+	Set stringx = strAppendString(stringx, toArray("],"))
+	Set stringx = strAppendString(stringx, toArray("""imports2"":{"))
+	Set stringx = strAppendString(stringx, toArray("},"))
+	Set stringx = strAppendString(stringx, toArray("""development imports"":["))
+	Set stringx = strAppendString(stringx, toArray("["""",""no.inductive.idea10.programs"",""arrays"",""0.1.0""]"))
+	Set stringx = strAppendString(stringx, toArray("]"))
+	Set stringx = strAppendString(stringx, toArray("}"))
+
+	Set message = CreateStringReference(toArray(""))
+	Set elementReference = New DataReference
+	success = ReadJSON(stringx, elementReference, message)
+	Call AssertTrue(success, failures)
+
+	If success Then
+		Set json = elementReference.data
+
+		Set string2 = WriteJSON(json)
+
+		Call AssertEquals(stringx.Count, string2.Count, failures)
+	End If
+End Sub
+
+
+Public Sub TestReaderExample(failures)
+	Dim json
+	Dim message
+	Dim elementReference
+	Dim outputJSON
+
+	Set message = CreateStringReference(toArray(""))
+	Set elementReference = New DataReference
+	Set outputJSON = CreateStringReference(toArray(""))
+
+	Set json = toArray("{""a"":""hi"",""b"":[1.2, 0.1, 100],""x"":{""x1"":null,""x2"":true,""x3"":false}}")
+
+	Call JSONExample(json, message, elementReference, outputJSON)
+End Sub
+
+
+Public Sub JSONExample(json, messages, elementReference, outputJSON)
+	Dim success
+	Dim element, aElement
+	Dim stringx
+	Dim arrayx
+	Dim x, y, z
+
+	' The following JSON is in the string json:
+	'           {
+	'             "a": "hi",
+	'             "b": [1.2, 0.1, 100],
+	'             "x": {
+	'               "x1": null,
+	'               "x2": true,
+	'               "x3": false
+	'             }
+	'           }
+	'        
+
+	' This functions reads the JSON
+	success = ReadJSON(json, elementReference, messages)
+
+	' The return value 'success' is set to true of the parsing succeeds,
+	' if not, errorMessages contains the reason.
+	If success Then
+		' We can now extract the data structure:
+		Set element = elementReference.data
+
+		' The following is gets the value "hi" for key "a":
+		Set aElement = GetDataFromStruct(element.structure, toArray("a"))
+		Set stringx = aElement.stringx
+
+		' The following is gets the array [1.2, 0.1, 100] for key "b":
+		Set aElement = GetDataFromStruct(element.structure, toArray("b"))
+		Set arrayx = aElement.arrayx
+		x = ArrayIndex(arrayx, 0).number
+		y = ArrayIndex(arrayx, 1).number
+		z = ArrayIndex(arrayx, 2).number
+
+		' This is how you write JSON:
+		Set outputJSON.stringx = WriteJSON(element)
+	Else
+		' There was a problem, so we cannot read our data structure.
+		' Instead, we can check out the error message.
+		Set stringx = messages.stringx
+	End If
+End Sub
+
+
+Public Function test()
+	Dim failures
+
+	Set failures = CreateNumberReference(0)
+
+	Call TestReader(failures)
+	Call Test2(failures)
+	Call TestWriter(failures)
+	Call TestWriterEscape(failures)
+	Call TestTokenizer1(failures)
+	Call TestReaderExample(failures)
+	Call TestEscaper(failures)
+	Call TestValidator(failures)
+	Call TestComparator(failures)
+	Call TestWriter2(failures)
+	Call TestWriter3(failures)
+
+	test = failures.numberValue
+End Function
+
+
+Public Sub TestValidator(failures)
+	Dim a, b, c, d
+	Dim message
+
+	Set message = CreateStringReference(toArray(""))
+
+	Set a = toArray("{""a"":""hi"",""b"":[1.2, 0.1, 100],""x"":{""x1"":null,""x2"":true,""x3"":false}}")
+	Set b = toArray("{{}}]")
+	Set c = toArray("")
+	Set d = toArray("{")
+
+	Call AssertTrue(IsValidJSON(a, message), failures)
+	Call AssertFalse(IsValidJSON(b, message), failures)
+	Call AssertFalse(IsValidJSON(c, message), failures)
+	Call AssertFalse(IsValidJSON(d, message), failures)
+End Sub
+
+
+Public Sub TestComparator(failures)
+	Dim a, b
+	Dim message
+	Dim equalsReference
+	Dim success
+
+	Set message = CreateStringReference(toArray(""))
+	Set equalsReference = CreateBooleanReference(false)
+
+	Set a = toArray("{""a"":""hi"",""b"":[1.2, 0.1, 100],""x"":{""x1"":null,""x2"":true,""x3"":false}}")
+	Set b = toArray("{""x"":{""x1"":null,""x2"":true,""x3"":false},""a"":""hi"",""b"":[1.2, 0.1, 100]}")
+
+	success = JSONCompare(a, b, 0.0001, equalsReference, message)
+
+	Call AssertTrue(success, failures)
+	Call AssertTrue(equalsReference.booleanValue, failures)
+
+	Set a = toArray("{""a"":""hi"",""b"":[1.201, 0.1, 100],""x"":{""x1"":null,""x2"":true,""x3"":false}}")
+	Set b = toArray("{""x"":{""x1"":null,""x2"":true,""x3"":false},""a"":""hi"",""b"":[1.2, 0.1, 100]}")
+
+	success = JSONCompare(a, b, 0.0001, equalsReference, message)
+
+	Call AssertTrue(success, failures)
+	Call AssertFalse(equalsReference.booleanValue, failures)
+
+	success = JSONCompare(a, b, 0.1, equalsReference, message)
+
+	Call AssertTrue(success, failures)
+	Call AssertTrue(equalsReference.booleanValue, failures)
+End Sub
+
+
+Public Sub TestTokenizer1(failures)
+	Dim countReference, stringLength
+	Dim tokenArrayReference
+	Dim message
+	Dim success
+	Dim numbers
+	Dim i
+
+	Set countReference = CreateNumberReference(0)
+	Set stringLength = CreateNumberReference(0)
+	Set message = CreateStringReference(toArray(""))
+
+	Set tokenArrayReference = New StringArrayReference
+
+	success = JSONTokenize(toArray("false"), tokenArrayReference, message)
+	Call AssertTrue(success, failures)
+	If success Then
+		Call AssertEquals(tokenArrayReference.stringArray.Count, 2, failures)
+		Call AssertStringEquals(tokenArrayReference.stringArray(0).stringx, toArray("false"), failures)
+	End If
+
+	Set numbers = strSplitByString(toArray("11, -1e-1, -0.123456789e-99, 1E1, -0.1E23"), toArray(", "))
+
+	i = 0
+	While i < numbers.Count
+		success = JSONTokenize(numbers(i).stringx, tokenArrayReference, message)
+		Call AssertTrue(success, failures)
+		If success Then
+			Call AssertEquals(tokenArrayReference.stringArray.Count, 2, failures)
+			Call AssertStringEquals(tokenArrayReference.stringArray(0).stringx, numbers(i).stringx, failures)
+		End If
+		i = i + 1
+	WEnd
+
+	success = IsValidJSONStringInJSON(toArray(""""""), 0, countReference, stringLength, message)
+	Call AssertTrue(success, failures)
+	If success Then
+		Call AssertEquals(countReference.numberValue, 2, failures)
+	End If
+
+	success = IsValidJSONString(toArray("""\u1234\n\r\f\b\t"""), message)
+	Call AssertTrue(success, failures)
+
+	success = JSONTokenize(toArray(""""), tokenArrayReference, message)
+	Call AssertFalse(success, failures)
+
+	success = IsValidJSONNumber(toArray("1.1-e1"), message)
+	Call AssertFalse(success, failures)
+
+	success = IsValidJSONNumber(toArray("1E+2"), message)
+	Call AssertTrue(success, failures)
+
+	success = IsValidJSONString(toArray("""\uAAAG"""), message)
+	Call AssertFalse(success, failures)
+
+	success = IsValidJSONNumber(toArray("0"), message)
+	Call AssertTrue(success, failures)
+
+	success = IsValidJSONNumber(toArray("0e0"), message)
+	Call AssertTrue(success, failures)
+
+	success = IsValidJSONNumber(toArray("00"), message)
+	Call AssertFalse(success, failures)
+End Sub
+
+
+Public Function CreateBooleanReference(ByVal value)
+	Dim ref
+
+	Set ref = New BooleanReference
+	ref.booleanValue = value
+
+	Set CreateBooleanReference = ref
+End Function
+
+
+Public Function CreateBooleanArrayReference(value)
+	Dim ref
+
+	Set ref = New BooleanArrayReference
+	Set ref.booleanArray = value
+
+	Set CreateBooleanArrayReference = ref
+End Function
+
+
+Public Function CreateBooleanArrayReferenceLengthValue(ByVal length, ByVal value)
+	Dim ref
+	Dim i
+
+	Set ref = New BooleanArrayReference
+	Set ref.booleanArray = allocArray(length)
+
+	i = 0
+	While i < length
+		ref.booleanArray(i) = value
+		i = i + 1
+	WEnd
+
+	Set CreateBooleanArrayReferenceLengthValue = ref
+End Function
+
+
+Public Sub FreeBooleanArrayReference(booleanArrayReference)
+	EraseArray booleanArrayReference.booleanArray 
+	Set booleanArrayReference = Nothing
+End Sub
+
+
+Public Function CreateCharacterReference(ByVal value)
+	Dim ref
+
+	Set ref = New CharacterReference
+	ref.characterValue = value
+
+	Set CreateCharacterReference = ref
+End Function
+
+
+Public Function CreateNumberReference(ByVal value)
+	Dim ref
+
+	Set ref = New NumberReference
+	ref.numberValue = value
+
+	Set CreateNumberReference = ref
+End Function
+
+
+Public Function CreateNumberArrayReference(value)
+	Dim ref
+
+	Set ref = New NumberArrayReference
+	Set ref.numberArray = value
+
+	Set CreateNumberArrayReference = ref
+End Function
+
+
+Public Function CreateNumberArrayReferenceLengthValue(ByVal length, ByVal value)
+	Dim ref
+	Dim i
+
+	Set ref = New NumberArrayReference
+	Set ref.numberArray = allocArray(length)
+
+	i = 0
+	While i < length
+		ref.numberArray(i) = value
+		i = i + 1
+	WEnd
+
+	Set CreateNumberArrayReferenceLengthValue = ref
+End Function
+
+
+Public Sub FreeNumberArrayReference(numberArrayReference)
+	EraseArray numberArrayReference.numberArray 
+	Set numberArrayReference = Nothing
+End Sub
+
+
+Public Function CreateStringReference(value)
+	Dim ref
+
+	Set ref = New StringReference
+	Set ref.stringx = value
+
+	Set CreateStringReference = ref
+End Function
+
+
+Public Function CreateStringReferenceLengthValue(ByVal length, ByVal value)
+	Dim ref
+	Dim i
+
+	Set ref = New StringReference
+	Set ref.stringx = allocArray(length)
+
+	i = 0
+	While i < length
+		ref.stringx(i) = value
+		i = i + 1
+	WEnd
+
+	Set CreateStringReferenceLengthValue = ref
+End Function
+
+
+Public Sub FreeStringReference(stringReference)
+	EraseArray stringReference.stringx 
+	Set stringReference = Nothing
+End Sub
+
+
+Public Function CreateStringArrayReference(strings)
+	Dim ref
+
+	Set ref = New StringArrayReference
+	Set ref.stringArray = strings
+
+	Set CreateStringArrayReference = ref
+End Function
+
+
+Public Function CreateStringArrayReferenceLengthValue(ByVal length, value)
+	Dim ref
+	Dim i
+
+	Set ref = New StringArrayReference
+	Set ref.stringArray = allocArray(length)
+
+	i = 0
+	While i < length
+		Set ref.stringArray(i) = CreateStringReference(value)
+		i = i + 1
+	WEnd
+
+	Set CreateStringArrayReferenceLengthValue = ref
+End Function
+
+
+Public Sub FreeStringArrayReference(stringArrayReference)
+	Dim i
+
+	i = 0
+	While i < stringArrayReference.stringArray.Count
+		Set stringArrayReference.stringArray(i) = Nothing
+		i = i + 1
+	WEnd
+	EraseArray stringArrayReference.stringArray 
+	Set stringArrayReference = Nothing
+End Sub
+
+
+Public Sub strWriteStringToStingStream(stream, index, src)
+	Dim i
+
+	i = 0
+	While i < src.Count
+		stream(index.numberValue + i) = src(i)
+		i = i + 1
+	WEnd
+	index.numberValue = index.numberValue + src.Count
+End Sub
+
+
+Public Sub strWriteCharacterToStingStream(stream, index, ByVal src)
+	stream(index.numberValue) = src
+	index.numberValue = index.numberValue + 1
+End Sub
+
+
+Public Sub strWriteBooleanToStingStream(stream, index, ByVal src)
+	If src Then
+		Call strWriteStringToStingStream(stream, index, toArray("true"))
+	Else
+		Call strWriteStringToStingStream(stream, index, toArray("false"))
+	End If
+End Sub
+
+
+Public Function strSubstringWithCheck(stringx, ByVal from, ByVal tox, stringReference)
+	Dim success
+
+	If from >= 0 And from <= stringx.Count And tox >= 0 And tox <= stringx.Count And from <= tox Then
+		Set stringReference.stringx = strSubstring(stringx, from, tox)
+		success = true
+	Else
+		success = false
+	End If
+
+	strSubstringWithCheck = success
+End Function
+
+
+Public Function strSubstring(stringx, ByVal from, ByVal tox)
+	Dim n
+	Dim i, length
+
+	length = tox - from
+
+	Set n = allocArray(length)
+
+	i = from
+	While i < tox
+		n(i - from) = stringx(i)
+		i = i + 1
+	WEnd
+
+	Set strSubstring = n
+End Function
+
+
+Public Function strAppendString(s1, s2)
+	Dim newString
+
+	Set newString = strConcatenateString(s1, s2)
+
+	EraseArray s1 
+
+	Set strAppendString = newString
+End Function
+
+
+Public Function strConcatenateString(s1, s2)
+	Dim newString
+	Dim i
+
+	Set newString = allocArray(s1.Count + s2.Count)
+
+	i = 0
+	While i < s1.Count
+		newString(i) = s1(i)
+		i = i + 1
+	WEnd
+
+	i = 0
+	While i < s2.Count
+		newString(s1.Count + i) = s2(i)
+		i = i + 1
+	WEnd
+
+	Set strConcatenateString = newString
+End Function
+
+
+Public Function strAppendCharacter(stringx, ByVal c)
+	Dim newString
+
+	Set newString = strConcatenateCharacter(stringx, c)
+
+	EraseArray stringx 
+
+	Set strAppendCharacter = newString
+End Function
+
+
+Public Function strConcatenateCharacter(stringx, ByVal c)
+	Dim newString
+	Dim i
+	Set newString = allocArray(stringx.Count + 1)
+
+	i = 0
+	While i < stringx.Count
+		newString(i) = stringx(i)
+		i = i + 1
+	WEnd
+
+	newString(stringx.Count) = c
+
+	Set strConcatenateCharacter = newString
+End Function
+
+
+Public Function strSplitByCharacter(toSplit, ByVal splitBy)
+	Dim parts
+	Dim i
+	Dim c
+	Dim ll
+	Dim nextx
+	Dim part
+
+	Set ll = CreateLinkedListString()
+
+	Set nextx = CreateLinkedListCharacter()
+	i = 0
+	While i < toSplit.Count
+		c = toSplit(i)
+
+		If c = splitBy Then
+			Set part = LinkedListCharactersToArray(nextx)
+			Call LinkedListAddString(ll, part)
+			Call FreeLinkedListCharacter(nextx)
+			Set nextx = CreateLinkedListCharacter()
+		Else
+			Call LinkedListAddCharacter(nextx, c)
+		End If
+		i = i + 1
+	WEnd
+
+	Set part = LinkedListCharactersToArray(nextx)
+	Call LinkedListAddString(ll, part)
+	Call FreeLinkedListCharacter(nextx)
+
+	Set parts = LinkedListStringsToArray(ll)
+	Call FreeLinkedListString(ll)
+
+	Set strSplitByCharacter = parts
+End Function
+
+
+Public Function strIndexOfCharacter(stringx, ByVal character, indexReference)
+	Dim i
+	Dim found
+
+	found = false
+	i = 0
+	While i < stringx.Count And Not found
+		If stringx(i) = character Then
+			found = true
+			indexReference.numberValue = i
+		End If
+		i = i + 1
+	WEnd
+
+	strIndexOfCharacter = found
+End Function
+
+
+Public Function strLastIndexOfCharacter(stringx, ByVal character, indexReference)
+	Dim i
+	Dim found
+
+	found = false
+	i = 0
+	While i < stringx.Count
+		If stringx(i) = character Then
+			found = true
+			indexReference.numberValue = i
+		End If
+		i = i + 1
+	WEnd
+
+	strLastIndexOfCharacter = found
+End Function
+
+
+Public Function strSubstringEqualsWithCheck(stringx, ByVal from, substring, equalsReference)
+	Dim success
+
+	If from < stringx.Count Then
+		success = true
+		equalsReference.booleanValue = strSubstringEquals(stringx, from, substring)
+	Else
+		success = false
+	End If
+
+	strSubstringEqualsWithCheck = success
+End Function
+
+
+Public Function strSubstringEquals(stringx, ByVal from, substring)
+	Dim i
+	Dim equal
+
+	equal = true
+	If stringx.Count - from >= substring.Count Then
+		i = 0
+		While i < substring.Count And equal
+			If stringx(from + i) <> substring(i) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	strSubstringEquals = equal
+End Function
+
+
+Public Function strIndexOfString(stringx, substring, indexReference)
+	Dim i
+	Dim found
+
+	found = false
+	i = 0
+	While i < stringx.Count - substring.Count + 1 And Not found
+		If strSubstringEquals(stringx, i, substring) Then
+			found = true
+			indexReference.numberValue = i
+		End If
+		i = i + 1
+	WEnd
+
+	strIndexOfString = found
+End Function
+
+
+Public Function strContainsCharacter(stringx, ByVal character)
+	Dim i
+	Dim found
+
+	found = false
+	i = 0
+	While i < stringx.Count And Not found
+		If stringx(i) = character Then
+			found = true
+		End If
+		i = i + 1
+	WEnd
+
+	strContainsCharacter = found
+End Function
+
+
+Public Function strContainsString(stringx, substring)
+	strContainsString = strIndexOfString(stringx, substring, New NumberReference)
+End Function
+
+
+Public Sub strToUpperCase(stringx)
+	Dim i
+
+	i = 0
+	While i < stringx.Count
+		stringx(i) = charToUpperCase(stringx(i))
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Sub strToLowerCase(stringx)
+	Dim i
+
+	i = 0
+	While i < stringx.Count
+		stringx(i) = charToLowerCase(stringx(i))
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Function strEqualsIgnoreCase(a, b)
+	Dim equal
+	Dim i
+
+	If a.Count = b.Count Then
+		equal = true
+		i = 0
+		While i < a.Count And equal
+			If charToLowerCase(a(i)) <> charToLowerCase(b(i)) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	strEqualsIgnoreCase = equal
+End Function
+
+
+Public Function strReplaceString(stringx, toReplace, replaceWith)
+	Dim result
+	Dim i, j
+	Dim equalsReference
+	Dim success
+	Dim da
+
+	Set da = CreateDynamicArrayCharacters()
+
+	Set equalsReference = New BooleanReference
+
+	i = 0
+	While i < stringx.Count
+		success = strSubstringEqualsWithCheck(stringx, i, toReplace, equalsReference)
+		If success Then
+			success = equalsReference.booleanValue
+		End If
+
+		If success And toReplace.Count > 0 Then
+			j = 0
+			While j < replaceWith.Count
+				Call DynamicArrayAddCharacter(da, replaceWith(j))
+				j = j + 1
+			WEnd
+			i = i + toReplace.Count
+		Else
+			Call DynamicArrayAddCharacter(da, stringx(i))
+			i = i + 1
+		End If
+	WEnd
+
+	Set result = DynamicArrayCharactersToArray(da)
+
+	Call FreeDynamicArrayCharacters(da)
+
+	Set strReplaceString = result
+End Function
+
+
+Public Function strReplaceCharacterToNew(stringx, ByVal toReplace, ByVal replaceWith)
+	Dim result
+	Dim i
+
+	Set result = allocArray(stringx.Count)
+
+	i = 0
+	While i < stringx.Count
+		If stringx(i) = toReplace Then
+			result(i) = replaceWith
+		Else
+			result(i) = stringx(i)
+		End If
+		i = i + 1
+	WEnd
+
+	Set strReplaceCharacterToNew = result
+End Function
+
+
+Public Sub strReplaceCharacter(stringx, ByVal toReplace, ByVal replaceWith)
+	Dim i
+
+	i = 0
+	While i < stringx.Count
+		If stringx(i) = toReplace Then
+			stringx(i) = replaceWith
+		End If
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Function strTrim(stringx)
+	Dim result
+	Dim i, lastWhitespaceLocationStart, lastWhitespaceLocationEnd
+	Dim firstNonWhitespaceFound
+
+	' Find whitepaces at the start.
+	lastWhitespaceLocationStart = -1
+	firstNonWhitespaceFound = false
+	i = 0
+	While i < stringx.Count And Not firstNonWhitespaceFound
+		If charIsWhiteSpace(stringx(i)) Then
+			lastWhitespaceLocationStart = i
+		Else
+			firstNonWhitespaceFound = true
+		End If
+		i = i + 1
+	WEnd
+
+	' Find whitepaces at the end.
+	lastWhitespaceLocationEnd = stringx.Count
+	firstNonWhitespaceFound = false
+	i = stringx.Count - 1
+	While i >= 0 And Not firstNonWhitespaceFound
+		If charIsWhiteSpace(stringx(i)) Then
+			lastWhitespaceLocationEnd = i
+		Else
+			firstNonWhitespaceFound = true
+		End If
+		i = i - 1
+	WEnd
+
+	If lastWhitespaceLocationStart < lastWhitespaceLocationEnd Then
+		Set result = strSubstring(stringx, lastWhitespaceLocationStart + 1, lastWhitespaceLocationEnd)
+	Else
+		Set result = allocArray(0)
+	End If
+
+	Set strTrim = result
+End Function
+
+
+Public Function strStartsWith(stringx, start)
+	Dim startsWithString
+
+	startsWithString = false
+	If stringx.Count >= start.Count Then
+		startsWithString = strSubstringEquals(stringx, 0, start)
+	End If
+
+	strStartsWith = startsWithString
+End Function
+
+
+Public Function strEndsWith(stringx, endx)
+	Dim endsWithString
+
+	endsWithString = false
+	If stringx.Count >= endx.Count Then
+		endsWithString = strSubstringEquals(stringx, stringx.Count - endx.Count, endx)
+	End If
+
+	strEndsWith = endsWithString
+End Function
+
+
+Public Function strSplitByString(toSplit, splitBy)
+	Dim parts
+	Dim i
+	Dim c
+	Dim ll
+	Dim nextx
+	Dim part
+
+	Set ll = CreateLinkedListString()
+
+	Set nextx = CreateLinkedListCharacter()
+	i = 0
+	While i < toSplit.Count
+		c = toSplit(i)
+
+		If strSubstringEquals(toSplit, i, splitBy) Then
+			Set part = LinkedListCharactersToArray(nextx)
+			Call LinkedListAddString(ll, part)
+			Call FreeLinkedListCharacter(nextx)
+			Set nextx = CreateLinkedListCharacter()
+			i = i + splitBy.Count
+		Else
+			Call LinkedListAddCharacter(nextx, c)
+			i = i + 1
+		End If
+	WEnd
+
+	Set part = LinkedListCharactersToArray(nextx)
+	Call LinkedListAddString(ll, part)
+	Call FreeLinkedListCharacter(nextx)
+
+	Set parts = LinkedListStringsToArray(ll)
+	Call FreeLinkedListString(ll)
+
+	Set strSplitByString = parts
+End Function
+
+
+Public Function strStringIsBefore(a, b)
+	Dim before, equal, done
+	Dim i
+
+	before = false
+	equal = true
+	done = false
+
+	If a.Count = 0 And b.Count > 0 Then
+		before = true
+	Else
+		i = 0
+		While i < a.Count And i < b.Count And Not done
+			If a(i) <> b(i) Then
+				equal = false
+			End If
+			If charCharacterIsBefore(a(i), b(i)) Then
+				before = true
+			End If
+			If charCharacterIsBefore(b(i), a(i)) Then
+				done = true
+			End If
+			i = i + 1
+		WEnd
+
+		If equal Then
+			If a.Count < b.Count Then
+				before = true
+			End If
+		End If
+	End If
+
+	strStringIsBefore = before
+End Function
+
+
+Public Function strJoinStringsWithSeparator(strings, separator)
+	Dim result, stringx
+	Dim length, i
+	Dim index
+
+	Set index = CreateNumberReference(0)
+
+	length = 0
+	i = 0
+	While i < strings.Count
+		length = length + strings(i).stringx.Count
+		i = i + 1
+	WEnd
+	length = length + (strings.Count - 1)*separator.Count
+
+	Set result = allocArray(length)
+
+	i = 0
+	While i < strings.Count
+		Set stringx = strings(i).stringx
+		Call strWriteStringToStingStream(result, index, stringx)
+		If i + 1 < strings.Count Then
+			Call strWriteStringToStingStream(result, index, separator)
+		End If
+		i = i + 1
+	WEnd
+
+	Set index = Nothing
+
+	Set strJoinStringsWithSeparator = result
+End Function
+
+
+Public Function strJoinStrings(strings)
+	Dim result, stringx
+	Dim length, i
+	Dim index
+
+	Set index = CreateNumberReference(0)
+
+	length = 0
+	i = 0
+	While i < strings.Count
+		length = length + strings(i).stringx.Count
+		i = i + 1
+	WEnd
+
+	Set result = allocArray(length)
+
+	i = 0
+	While i < strings.Count
+		Set stringx = strings(i).stringx
+		Call strWriteStringToStingStream(result, index, stringx)
+		i = i + 1
+	WEnd
+
+	Set index = Nothing
+
+	Set strJoinStrings = result
+End Function
+
+
+Public Function strStringOrder(a, b)
+	Dim order, minimum, i, ac, bc
+	Dim done
+
+	minimum = Min(a.Count, b.Count)
+
+	done = false
+	order = 0
+	i = 0
+	While i < minimum And Not done
+		ac = Ascw(a(i))
+		bc = Ascw(b(i))
+
+		If ac < bc Then
+			done = true
+			order = 1
+		ElseIf ac > bc Then
+			done = true
+			order = -1
+		End If
+		i = i + 1
+	WEnd
+
+	If Not done Then
+		If a.Count < b.Count Then
+			order = 1
+		ElseIf a.Count > b.Count Then
+			order = -1
+		End If
+	End If
+
+	strStringOrder = order
+End Function
+
+
+Public Function strLeftPad(str, ByVal width)
+	Dim i
+	Dim padded
+
+	Set padded = allocArray(width)
+	Call FillString(padded, " ")
+
+	i = 0
+	While i < str.Count
+		padded(width - str.Count + i) = str(i)
+		i = i + 1
+	WEnd
+
+	Set strLeftPad = padded
+End Function
+
+
+Public Function strRightPad(str, ByVal width)
+	Dim i
+	Dim padded
+
+	Set padded = allocArray(width)
+	Call FillString(padded, " ")
+
+	i = 0
+	While i < str.Count
+		padded(i) = str(i)
+		i = i + 1
+	WEnd
+
+	Set strRightPad = padded
+End Function
+
+
+Public Function nCreateStringScientificNotationDecimalFromNumber(ByVal n)
+	Dim mantissaReference, exponentReference
+	Dim e
+	Dim isPositive
+	Dim result
+
+	Set mantissaReference = New StringReference
+	Set exponentReference = New StringReference
+	Set result = allocArray(0)
+
+	If n < 0 Then
+		isPositive = false
+		n = -n
+	Else
+		isPositive = true
+	End If
+
+	If n = 0 Then
+		e = 0
+	Else
+		e = nGetFirstDecimalDigitPosition(n)
+
+		If e < 0 Then
+			n = n*Pow(10, Abs(e))
+		Else
+			n = n/Pow(10, e)
+		End If
+	End If
+
+	Set mantissaReference.stringx = nCreateStringDecimalFromNumber(n)
+	Set exponentReference.stringx = nCreateStringDecimalFromNumber(e)
+
+	If Not isPositive Then
+		Set result = strAppendString(result, toArray("-"))
+	End If
+
+	Set result = strAppendString(result, mantissaReference.stringx)
+	Set result = strAppendString(result, toArray("e"))
+	Set result = strAppendString(result, exponentReference.stringx)
+
+	Set nCreateStringScientificNotationDecimalFromNumber = result
+End Function
+
+
+Public Function nCreateStringDecimalFromNumber(ByVal number)
+	Dim stringx
+	Dim maximumDigits, i, d, digitPosition, trailingZeros
+	Dim hasPrintedPoint, isPositive, done
+	Dim characterReference
+	Dim c
+	Dim str
+
+	Set stringx = CreateDynamicArrayCharacters()
+	isPositive = true
+
+	If number < 0 Then
+		isPositive = false
+		number = -number
+	End If
+
+	If number = 0 Then
+		Call DynamicArrayAddCharacter(stringx, "0")
+	Else
+		Set characterReference = New CharacterReference
+
+		maximumDigits = nGetMaximumDigitsForDecimal()
+
+		digitPosition = nGetFirstDecimalDigitPosition(number)
+
+		hasPrintedPoint = false
+
+		If Not isPositive Then
+			Call DynamicArrayAddCharacter(stringx, "-")
+		End If
+
+		' Print leading zeros.
+		If digitPosition < 0 Then
+			Call DynamicArrayAddCharacter(stringx, "0")
+			Call DynamicArrayAddCharacter(stringx, ".")
+			hasPrintedPoint = true
+			i = 0
+			While i < -digitPosition - 1
+				Call DynamicArrayAddCharacter(stringx, "0")
+				i = i + 1
+			WEnd
+		End If
+
+		' Count trailing zeros
+		trailingZeros = 0
+		done = false
+		i = 0
+		While i < maximumDigits And Not done
+			d = nGetDecimalDigitWithFirstDigitPosition(number, digitPosition, maximumDigits - i - 1)
+			If d = 0 Then
+				trailingZeros = trailingZeros + 1
+			Else
+				done = true
+			End If
+			i = i + 1
+		WEnd
+
+		' Print number.
+		i = 0
+		While i < maximumDigits
+			d = nGetDecimalDigitWithFirstDigitPosition(number, digitPosition, i)
+
+			If Not hasPrintedPoint And digitPosition - i + 1 = 0 Then
+				If maximumDigits - i > trailingZeros Then
+					Call DynamicArrayAddCharacter(stringx, ".")
+				End If
+				hasPrintedPoint = true
+			End If
+
+			If maximumDigits - i <= trailingZeros And hasPrintedPoint Then
+			Else
+				Call nGetDecimalDigitCharacterFromNumberWithCheck(d, characterReference)
+				c = characterReference.characterValue
+				Call DynamicArrayAddCharacter(stringx, c)
+			End If
+			i = i + 1
+		WEnd
+
+		' Print trailing zeros.
+		i = 0
+		While i < digitPosition - maximumDigits + 1
+			Call DynamicArrayAddCharacter(stringx, "0")
+			i = i + 1
+		WEnd
+	End If
+
+	' Done
+	Set str = DynamicArrayCharactersToArray(stringx)
+	Call FreeDynamicArrayCharacters(stringx)
+	Set nCreateStringDecimalFromNumber = str
+End Function
+
+
+Public Function nCreateStringFromNumberWithCheck(ByVal number, ByVal basex, stringRef)
+	Dim stringx
+	Dim maximumDigits, i, d, digitPosition, trailingZeros
+	Dim success, hasPrintedPoint, isPositive, done
+	Dim characterReference
+	Dim c
+
+	Set stringx = CreateDynamicArrayCharacters()
+	isPositive = true
+
+	If number < 0 Then
+		isPositive = false
+		number = -number
+	End If
+
+	If number = 0 Then
+		Call DynamicArrayAddCharacter(stringx, "0")
+		success = true
+	Else
+		Set characterReference = New CharacterReference
+
+		If IsInteger(basex) Then
+			success = true
+
+			maximumDigits = nGetMaximumDigitsForBase(basex)
+
+			digitPosition = nGetFirstDigitPosition(number, basex)
+
+			hasPrintedPoint = false
+
+			If Not isPositive Then
+				Call DynamicArrayAddCharacter(stringx, "-")
+			End If
+
+			' Print leading zeros.
+			If digitPosition < 0 Then
+				Call DynamicArrayAddCharacter(stringx, "0")
+				Call DynamicArrayAddCharacter(stringx, ".")
+				hasPrintedPoint = true
+				i = 0
+				While i < -digitPosition - 1
+					Call DynamicArrayAddCharacter(stringx, "0")
+					i = i + 1
+				WEnd
+			End If
+
+			' Count trailing zeros
+			trailingZeros = 0
+			done = false
+			i = 0
+			While i < maximumDigits And Not done
+				d = nGetDigit(number, basex, maximumDigits - i - 1)
+				If d = 0 Then
+					trailingZeros = trailingZeros + 1
+				Else
+					done = true
+				End If
+				i = i + 1
+			WEnd
+
+			' Print number.
+			i = 0
+			While i < maximumDigits And success
+				d = nGetDigit(number, basex, i)
+
+				If d >= basex Then
+					d = basex - 1
+				End If
+
+				If Not hasPrintedPoint And digitPosition - i + 1 = 0 Then
+					If maximumDigits - i > trailingZeros Then
+						Call DynamicArrayAddCharacter(stringx, ".")
+					End If
+					hasPrintedPoint = true
+				End If
+
+				If maximumDigits - i <= trailingZeros And hasPrintedPoint Then
+				Else
+					success = nGetSingleDigitCharacterFromNumberWithCheck(d, basex, characterReference)
+					If success Then
+						c = characterReference.characterValue
+						Call DynamicArrayAddCharacter(stringx, c)
+					End If
+				End If
+				i = i + 1
+			WEnd
+
+			If success Then
+				' Print trailing zeros.
+				i = 0
+				While i < digitPosition - maximumDigits + 1
+					Call DynamicArrayAddCharacter(stringx, "0")
+					i = i + 1
+				WEnd
+			End If
+		Else
+			success = false
+		End If
+	End If
+
+	If success Then
+		Set stringRef.stringx = DynamicArrayCharactersToArray(stringx)
+		Call FreeDynamicArrayCharacters(stringx)
+	End If
+
+	' Done
+	nCreateStringFromNumberWithCheck = success
+End Function
+
+
+Public Function nGetMaximumDigitsForBase(ByVal basex)
+	Dim t
+
+	t = Pow(10, 15)
+	nGetMaximumDigitsForBase = Floor(Log10(t)/Log10(basex))
+End Function
+
+
+Public Function nGetMaximumDigitsForDecimal()
+	nGetMaximumDigitsForDecimal = 15
+End Function
+
+
+Public Function nGetFirstDecimalDigitPosition(ByVal n)
+	Dim power, m, i
+	Dim multiply, done
+
+	n = Abs(n)
+
+	If n <> 0 Then
+		If Floor(n) < Pow(10, 15) Then
+			multiply = true
+		Else
+			multiply = false
+		End If
+
+		done = false
+		m = 0
+		i = 0
+		While Not done
+			If multiply Then
+				m = n*Pow(10, i)
+				If Floor(m) >= Pow(10, 14) Then
+					done = true
+				End If
+			Else
+				m = n/Pow(10, i)
+				If Floor(m) < Pow(10, 15) Then
+					done = true
+				End If
+			End If
+			i = i + 1
+		WEnd
+
+		If multiply Then
+			power = 15 - i
+		Else
+			power = 15 + i - 2
+		End If
+
+		If Roundx(m) >= Pow(10, 15) Then
+			power = power + 1
+		End If
+	Else
+		power = 1
+	End If
+
+	nGetFirstDecimalDigitPosition = power
+End Function
+
+
+Public Function nGetFirstDigitPosition(ByVal n, ByVal basex)
+	Dim power, m, i, maximumDigits
+	Dim multiply, done
+
+	maximumDigits = nGetMaximumDigitsForBase(basex)
+	n = Abs(n)
+
+	If n <> 0 Then
+		If Floor(n) < Pow(basex, maximumDigits) Then
+			multiply = true
+		Else
+			multiply = false
+		End If
+
+		done = false
+		m = 0
+		i = 0
+		While Not done
+			If multiply Then
+				m = n*Pow(basex, i)
+				If Floor(m) >= Pow(basex, maximumDigits - 1) Then
+					done = true
+				End If
+			Else
+				m = n/Pow(basex, i)
+				If Floor(m) < Pow(basex, maximumDigits) Then
+					done = true
+				End If
+			End If
+			i = i + 1
+		WEnd
+
+		If multiply Then
+			power = maximumDigits - i
+		Else
+			power = maximumDigits + i - 2
+		End If
+
+		If Roundx(m) >= Pow(basex, maximumDigits) Then
+			power = power + 1
+		End If
+	Else
+		power = 1
+	End If
+
+	nGetFirstDigitPosition = power
+End Function
+
+
+Public Function nGetSingleDigitCharacterFromNumberWithCheck(ByVal c, ByVal basex, characterReference)
+	Dim numberTable
+	Dim success
+
+	Set numberTable = nGetDigitCharacterTable()
+
+	If c < basex Or c < numberTable.Count Then
+		success = true
+		characterReference.characterValue = numberTable(c)
+	Else
+		success = false
+	End If
+
+	nGetSingleDigitCharacterFromNumberWithCheck = success
+End Function
+
+
+Public Function nGetDecimalDigitCharacterFromNumberWithCheck(ByVal c, characterRef)
+	Dim numberTable
+	Dim success
+
+	Set numberTable = toArray("0123456789")
+
+	If c >= 0 And c < 10 Then
+		success = true
+		characterRef.characterValue = numberTable(c)
+	Else
+		success = false
+	End If
+
+	nGetDecimalDigitCharacterFromNumberWithCheck = success
+End Function
+
+
+Public Function nGetDigitCharacterTable()
+	Dim numberTable
+
+	Set numberTable = toArray("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	Set nGetDigitCharacterTable = numberTable
+End Function
+
+
+Public Function nGetDecimalDigit(ByVal n, ByVal index)
+	Dim digitPosition
+
+	digitPosition = nGetFirstDecimalDigitPosition(n)
+
+	nGetDecimalDigit = nGetDecimalDigitWithFirstDigitPosition(n, digitPosition, index)
+End Function
+
+
+Public Function nGetDecimalDigitWithFirstDigitPosition(ByVal n, ByVal digitPosition, ByVal index)
+	Dim d, e, m, i
+
+	n = Abs(n)
+
+	e = 15 - digitPosition - 1
+	If e < 0 Then
+		n = Round(n/Pow(10, Abs(e)))
+	Else
+		n = Round(n*Pow(10, e))
+	End If
+
+	m = n
+	d = 0
+	i = 0
+	While i < 15 - index
+		d = Round(Modulus(m, 10))
+		m = m - d
+		m = Round(m/10)
+		i = i + 1
+	WEnd
+
+	nGetDecimalDigitWithFirstDigitPosition = d
+End Function
+
+
+Public Function nGetDigit(ByVal n, ByVal basex, ByVal index)
+	Dim d, digitPosition, e, m, maximumDigits, i
+
+	n = Abs(n)
+	maximumDigits = nGetMaximumDigitsForBase(basex)
+	digitPosition = nGetFirstDigitPosition(n, basex)
+
+	e = maximumDigits - digitPosition - 1
+	If e < 0 Then
+		n = Round(n/Pow(basex, Abs(e)))
+	Else
+		n = Round(n*Pow(basex, e))
+	End If
+
+	m = n
+	d = 0
+	i = 0
+	While i < maximumDigits - index
+		d = Round(Modulus(m, basex))
+		m = m - d
+		m = Round(m/basex)
+		i = i + 1
+	WEnd
+
+	nGetDigit = d
+End Function
+
+
+Public Function nNumberToHumanReadableShortScale(ByVal n)
+	Dim res, suffix
+	Dim hasSuffix
+	Dim k, M, B, T, Q
+
+	k = 1000
+	M = k*1000
+	B = M*1000
+	T = B*1000
+	Q = T*1000
+	Set suffix = toArray(" ")
+
+	If n < k Then
+		hasSuffix = false
+	Else
+		hasSuffix = true
+	End If
+
+	If n >= k And n < M Then
+		If n < 10*k Then
+			n = Roundx(n/100)
+			n = n/10
+		Else
+			n = Roundx(n/k)
+		End If
+		Set suffix = toArray("k")
+	ElseIf n >= M And n < B Then
+		If n < 10*M Then
+			n = Roundx(n/(k*100))
+			n = n/10
+		Else
+			n = Roundx(n/M)
+		End If
+		Set suffix = toArray("M")
+	ElseIf n >= B And n < T Then
+		If n < 10*B Then
+			n = Roundx(n/(M*100))
+			n = n/10
+		Else
+			n = Roundx(n/B)
+		End If
+		Set suffix = toArray("B")
+	ElseIf n >= T And n < Q Then
+		If n < 10*T Then
+			n = Roundx(n/(B*100))
+			n = n/10
+		Else
+			n = Roundx(n/T)
+		End If
+		Set suffix = toArray("T")
+	ElseIf n >= Q Then
+		If n < 10*Q Then
+			n = Roundx(n/(T*100))
+			n = n/10
+		Else
+			n = Roundx(n/Q)
+		End If
+		Set suffix = toArray("Q")
+	End If
+
+	Set res = nCreateStringDecimalFromNumber(n)
+	If hasSuffix Then
+		Set res = strAppendString(res, suffix)
+	End If
+        
+	Set nNumberToHumanReadableShortScale = res
+End Function
+
+
+Public Function nNumberToHumanReadableBinary(ByVal n)
+	Dim res, suffix
+	Dim hasSuffix
+	Dim Ki, Mi, Gi, Ti, Pi, Ei, Zi, Yi
+
+	Ki = 1024
+	Mi = Ki*1024
+	Gi = Mi*1024
+	Ti = Gi*1024
+	Pi = Ti*1024
+	Ei = Pi*1024
+	Zi = Ei*1024
+	Yi = Zi*1024
+	Set suffix = toArray(" ")
+
+	If n < Ki Then
+		hasSuffix = false
+	Else
+		hasSuffix = true
+	End If
+
+	If n >= Ki And n < Mi Then
+		If n < 10*Ki Then
+			n = Roundx(n/(Ki/10))
+			n = n/10
+		Else
+			n = Roundx(n/Ki)
+		End If
+		Set suffix = toArray("Ki")
+	ElseIf n >= Mi And n < Gi Then
+		If n < 10*Mi Then
+			n = Roundx(n/(Mi/10))
+			n = n/10
+		Else
+			n = Roundx(n/Mi)
+		End If
+		Set suffix = toArray("Mi")
+	ElseIf n >= Gi And n < Ti Then
+		If n < 10*Gi Then
+			n = Roundx(n/(Gi/10))
+			n = n/10
+		Else
+			n = Roundx(n/Gi)
+		End If
+		Set suffix = toArray("Gi")
+	ElseIf n >= Ti And n < Pi Then
+		If n < 10*Ti Then
+			n = Roundx(n/(Ti/10))
+			n = n/10
+		Else
+			n = Roundx(n/Ti)
+		End If
+		Set suffix = toArray("Ti")
+	ElseIf n >= Pi And n < Ei Then
+		If n < 10*Pi Then
+			n = Roundx(n/(Pi/10))
+			n = n/10
+		Else
+			n = Roundx(n/Pi)
+		End If
+		Set suffix = toArray("Pi")
+	ElseIf n >= Ei And n < Zi Then
+		If n < 10*Ei Then
+			n = Roundx(n/(Ei/10))
+			n = n/10
+		Else
+			n = Roundx(n/Ei)
+		End If
+		Set suffix = toArray("Ei")
+	ElseIf n >= Zi And n < Yi Then
+		If n < 10*Zi Then
+			n = Roundx(n/(Zi/10))
+			n = n/10
+		Else
+			n = Roundx(n/Zi)
+		End If
+		Set suffix = toArray("Zi")
+	ElseIf n >= Yi Then
+		If n < 10*Yi Then
+			n = Roundx(n/(Yi/10))
+			n = n/10
+		Else
+			n = Roundx(n/Yi)
+		End If
+		Set suffix = toArray("Yi")
+	End If
+
+	Set res = nCreateStringDecimalFromNumber(n)
+	If hasSuffix Then
+		Set res = strAppendString(res, suffix)
+	End If
+
+	Set nNumberToHumanReadableBinary = res
+End Function
+
+
+Public Function nNumberToHumanReadableMetric(ByVal n)
+	Dim res, suffix
+	Dim hasSuffix
+	Dim k, M, G, T, P, Ex, Z, Y, R, Q
+
+	k = 1000
+	M = k*1000
+	G = M*1000
+	T = G*1000
+	P = T*1000
+	Ex = P*1000
+	Z = Ex*1000
+	Y = Z*1000
+	R = Y*1000
+	Q = R*1000
+	Set suffix = toArray(" ")
+
+	If n < k Then
+		hasSuffix = false
+	Else
+		hasSuffix = true
+	End If
+
+	If n >= k And n < M Then
+		If n < 10*k Then
+			n = Roundx(n/100)
+			n = n/10
+		Else
+			n = Roundx(n/k)
+		End If
+		Set suffix = toArray("k")
+	ElseIf n >= M And n < G Then
+		If n < 10*M Then
+			n = Roundx(n/(k*100))
+			n = n/10
+		Else
+			n = Roundx(n/M)
+		End If
+		Set suffix = toArray("M")
+	ElseIf n >= G And n < T Then
+		If n < 10*G Then
+			n = Roundx(n/(M*100))
+			n = n/10
+		Else
+			n = Roundx(n/G)
+		End If
+		Set suffix = toArray("G")
+	ElseIf n >= T And n < P Then
+		If n < 10*T Then
+			n = Roundx(n/(G*100))
+			n = n/10
+		Else
+			n = Roundx(n/T)
+		End If
+		Set suffix = toArray("T")
+	ElseIf n >= P And n < Ex Then
+		If n < 10*P Then
+			n = Roundx(n/(T*100))
+			n = n/10
+		Else
+			n = Roundx(n/P)
+		End If
+		Set suffix = toArray("P")
+	ElseIf n >= Ex And n < Z Then
+		If n < 10*Ex Then
+			n = Roundx(n/(P*100))
+			n = n/10
+		Else
+			n = Roundx(n/Ex)
+		End If
+		Set suffix = toArray("E")
+	ElseIf n >= Z And n < Y Then
+		If n < 10*Z Then
+			n = Roundx(n/(Ex*100))
+			n = n/10
+		Else
+			n = Roundx(n/Z)
+		End If
+		Set suffix = toArray("Z")
+	ElseIf n >= Y And n < R Then
+		If n < 10*Y Then
+			n = Roundx(n/(Z*100))
+			n = n/10
+		Else
+			n = Roundx(n/Y)
+		End If
+		Set suffix = toArray("Y")
+	ElseIf n >= R And n < Q Then
+		If n < 10*R Then
+			n = Roundx(n/(Y*100))
+			n = n/10
+		Else
+			n = Roundx(n/R)
+		End If
+		Set suffix = toArray("R")
+	ElseIf n >= Q Then
+		If n < 10*Q Then
+			n = Roundx(n/(R*100))
+			n = n/10
+		Else
+			n = Roundx(n/Q)
+		End If
+		Set suffix = toArray("Q")
+	End If
+
+	Set res = nCreateStringDecimalFromNumber(n)
+	If hasSuffix Then
+		Set res = strAppendString(res, suffix)
+	End If
+
+	Set nNumberToHumanReadableMetric = res
+End Function
+
+
+Public Function nIsValidNumber(str)
+	Dim valid
+	Dim numberRef
+	Dim message
+
+	Set numberRef = New NumberReference
+	Set message = New StringReference
+
+	valid = nCreateNumberFromDecimalStringWithCheck(str, numberRef, message)
+
+	Set numberRef = Nothing
+	Set message = Nothing
+
+	nIsValidNumber = valid
+End Function
+
+
+Public Function nIsValidInteger(str)
+	Dim valid
+	Dim numberRef
+	Dim message
+
+	Set numberRef = New NumberReference
+	Set message = New StringReference
+
+	valid = nCreateNumberFromDecimalStringWithCheck(str, numberRef, message)
+
+	If valid Then
+		valid = IsInteger(numberRef.numberValue)
+	End If
+
+	Set numberRef = Nothing
+	Set message = Nothing
+
+	nIsValidInteger = valid
+End Function
+
+
+Public Function nIsValidPositiveInteger(str)
+	Dim valid
+	Dim numberRef
+	Dim message
+
+	Set numberRef = New NumberReference
+	Set message = New StringReference
+
+	valid = nCreateNumberFromDecimalStringWithCheck(str, numberRef, message)
+
+	If valid Then
+		valid = IsInteger(numberRef.numberValue)
+		If valid Then
+			valid = numberRef.numberValue >= 0
+		End If
+	End If
+
+	Set numberRef = Nothing
+	Set message = Nothing
+
+	nIsValidPositiveInteger = valid
+End Function
+
+
+Public Function nCreateNumberFromDecimalStringWithCheck(stringx, decimalReference, message)
+	nCreateNumberFromDecimalStringWithCheck = nCreateNumberFromStringWithCheck(stringx, 10, decimalReference, message)
+End Function
+
+
+Public Function nCreateNumberFromDecimalString(stringx)
+	Dim doubleReference
+	Dim stringReference
+	Dim number
+
+	Set doubleReference = CreateNumberReference(0)
+	Set stringReference = CreateStringReference(toArray(""))
+	Call nCreateNumberFromStringWithCheck(stringx, 10, doubleReference, stringReference)
+	number = doubleReference.numberValue
+
+	Set doubleReference = Nothing
+	Set stringReference = Nothing
+
+	nCreateNumberFromDecimalString = number
+End Function
+
+
+Public Function nCreateNumberFromStringWithCheck(stringx, ByVal basex, numberReference, message)
+	Dim success
+	Dim numberIsPositive, exponentIsPositive
+	Dim beforePoint, afterPoint, exponent
+
+	Set numberIsPositive = CreateBooleanReference(true)
+	Set exponentIsPositive = CreateBooleanReference(true)
+	Set beforePoint = New NumberArrayReference
+	Set afterPoint = New NumberArrayReference
+	Set exponent = New NumberArrayReference
+
+	If basex >= 2 And basex <= 36 Then
+		success = nExtractPartsFromNumberString(stringx, basex, numberIsPositive, beforePoint, afterPoint, exponentIsPositive, exponent, message)
+
+		If success Then
+			numberReference.numberValue = nCreateNumberFromParts(basex, numberIsPositive.booleanValue, beforePoint.numberArray, afterPoint.numberArray, exponentIsPositive.booleanValue, exponent.numberArray)
+		End If
+	Else
+		success = false
+		Set message.stringx = toArray("Base must be from 2 to 36.")
+	End If
+
+	nCreateNumberFromStringWithCheck = success
+End Function
+
+
+Public Function nCreateNumberFromParts(ByVal basex, ByVal numberIsPositive, beforePoint, afterPoint, ByVal exponentIsPositive, exponent)
+	Dim n, i, p, e
+
+	n = 0
+
+	i = 0
+	While i < beforePoint.Count
+		p = beforePoint(beforePoint.Count - i - 1)
+
+		n = n + p*Pow(basex, i)
+		i = i + 1
+	WEnd
+
+	i = 0
+	While i < afterPoint.Count
+		p = afterPoint(i)
+
+		n = n + p/Pow(basex, i + 1)
+		i = i + 1
+	WEnd
+
+	If exponent.Count > 0 Then
+		e = 0
+		i = 0
+		While i < exponent.Count
+			p = exponent(exponent.Count - i - 1)
+
+			e = e + p*Pow(basex, i)
+			i = i + 1
+		WEnd
+
+		If Not exponentIsPositive Then
+			e = -e
+		End If
+
+		n = n*Pow(basex, e)
+	End If
+
+	If Not numberIsPositive Then
+		n = -n
+	End If
+
+	nCreateNumberFromParts = n
+End Function
+
+
+Public Function nExtractPartsFromNumberString(n, ByVal basex, numberIsPositive, beforePoint, afterPoint, exponentIsPositive, exponent, errorMessages)
+	Dim i, j, count
+	Dim success, done, complete
+
+	i = 0
+	complete = false
+
+	If i < n.Count Then
+		If n(i) = "-" Then
+			numberIsPositive.booleanValue = false
+			i = i + 1
+		ElseIf n(i) = "+" Then
+			numberIsPositive.booleanValue = true
+			i = i + 1
+		End If
+
+		success = true
+	Else
+		success = false
+		Set errorMessages.stringx = toArray("Number cannot have length zero.")
+	End If
+
+	If success Then
+		done = false
+		count = 0
+		
+		While i + count < n.Count And Not done
+			If nCharacterIsNumberCharacterInBase(n(i + count), basex) Then
+				count = count + 1
+			Else
+				done = true
+			End If
+		WEnd
+
+		If count >= 1 Then
+			Set beforePoint.numberArray = allocArray(count)
+
+			j = 0
+			While j < count
+				beforePoint.numberArray(j) = nGetNumberFromNumberCharacterForBase(n(i + j), basex)
+				j = j + 1
+			WEnd
+
+			i = i + count
+
+			If i < n.Count Then
+				success = true
+			Else
+				Set afterPoint.numberArray = allocArray(0)
+				Set exponent.numberArray = allocArray(0)
+				success = true
+				complete = true
+			End If
+		Else
+			success = false
+			Set errorMessages.stringx = toArray("Number must have at least one number after the optional sign.")
+		End If
+	End If
+
+	If success And Not complete Then
+		If n(i) = "." Then
+			i = i + 1
+
+			If i < n.Count Then
+				done = false
+				count = 0
+				
+				While i + count < n.Count And Not done
+					If nCharacterIsNumberCharacterInBase(n(i + count), basex) Then
+						count = count + 1
+					Else
+						done = true
+					End If
+				WEnd
+
+				If count >= 1 Then
+					Set afterPoint.numberArray = allocArray(count)
+
+					j = 0
+					While j < count
+						afterPoint.numberArray(j) = nGetNumberFromNumberCharacterForBase(n(i + j), basex)
+						j = j + 1
+					WEnd
+
+					i = i + count
+
+					If i < n.Count Then
+						success = true
+					Else
+						Set exponent.numberArray = allocArray(0)
+						success = true
+						complete = true
+					End If
+				Else
+					success = false
+					Set errorMessages.stringx = toArray("There must be at least one digit after the decimal point.")
+				End If
+			Else
+				success = false
+				Set errorMessages.stringx = toArray("There must be at least one digit after the decimal point.")
+			End If
+		ElseIf basex <= 14 And (n(i) = "e" Or n(i) = "E") Then
+			If i < n.Count Then
+				success = true
+				Set afterPoint.numberArray = allocArray(0)
+			Else
+				success = false
+				Set errorMessages.stringx = toArray("There must be at least one digit after the exponent.")
+			End If
+		Else
+			success = false
+			Set errorMessages.stringx = toArray("Expected decimal point or exponent symbol.")
+		End If
+	End If
+
+	If success And Not complete Then
+		If basex <= 14 And (n(i) = "e" Or n(i) = "E") Then
+			i = i + 1
+
+			If i < n.Count Then
+				If n(i) = "-" Then
+					exponentIsPositive.booleanValue = false
+					i = i + 1
+				ElseIf n(i) = "+" Then
+					exponentIsPositive.booleanValue = true
+					i = i + 1
+				End If
+
+				If i < n.Count Then
+					done = false
+					count = 0
+					
+					While i + count < n.Count And Not done
+						If nCharacterIsNumberCharacterInBase(n(i + count), basex) Then
+							count = count + 1
+						Else
+							done = true
+						End If
+					WEnd
+
+					If count >= 1 Then
+						Set exponent.numberArray = allocArray(count)
+
+						j = 0
+						While j < count
+							exponent.numberArray(j) = nGetNumberFromNumberCharacterForBase(n(i + j), basex)
+							j = j + 1
+						WEnd
+
+						i = i + count
+
+						If i = n.Count Then
+							success = true
+						Else
+							success = false
+							Set errorMessages.stringx = toArray("There cannot be any characters past the exponent of the number.")
+						End If
+					Else
+						success = false
+						Set errorMessages.stringx = toArray("There must be at least one digit after the decimal point.")
+					End If
+				Else
+					success = false
+					Set errorMessages.stringx = toArray("There must be at least one digit after the exponent symbol.")
+				End If
+			Else
+				success = false
+				Set errorMessages.stringx = toArray("There must be at least one digit after the exponent symbol.")
+			End If
+		Else
+			success = false
+			Set errorMessages.stringx = toArray("Expected exponent symbol.")
+		End If
+	End If
+
+	nExtractPartsFromNumberString = success
+End Function
+
+
+Public Function nGetNumberFromNumberCharacterForBase(ByVal c, ByVal basex)
+	Dim numberTable
+	Dim i
+	Dim position
+
+	Set numberTable = nGetDigitCharacterTable()
+	position = 0
+
+	i = 0
+	While i < basex
+		If numberTable(i) = c Then
+			position = i
+		End If
+		i = i + 1
+	WEnd
+
+	nGetNumberFromNumberCharacterForBase = position
+End Function
+
+
+Public Function nCharacterIsNumberCharacterInBase(ByVal c, ByVal basex)
+	Dim numberTable
+	Dim i
+	Dim found
+
+	Set numberTable = nGetDigitCharacterTable()
+	found = false
+
+	i = 0
+	While i < basex
+		If numberTable(i) = c Then
+			found = true
+		End If
+		i = i + 1
+	WEnd
+
+	nCharacterIsNumberCharacterInBase = found
+End Function
+
+
+Public Function nStringToNumberArray(str)
+	Dim numberArrayReference
+	Dim stringReference
+	Dim numbers
+
+	Set numberArrayReference = New NumberArrayReference
+	Set stringReference = New StringReference
+
+	Call nStringToNumberArrayWithCheck(str, numberArrayReference, stringReference)
+
+	Set numbers = numberArrayReference.numberArray
+
+	Set numberArrayReference = Nothing
+	Set stringReference = Nothing
+
+	Set nStringToNumberArray = numbers
+End Function
+
+
+Public Function nStringToNumberArrayWithCheck(str, numberArrayReference, errorMessage)
+	Dim numberStrings
+	Dim numbers
+	Dim i
+	Dim numberString, trimmedNumberString
+	Dim success
+	Dim numberReference
+
+	Set numberStrings = strSplitByString(str, toArray(","))
+
+	Set numbers = allocArray(numberStrings.Count)
+	success = true
+	Set numberReference = New NumberReference
+
+	i = 0
+	While i < numberStrings.Count
+		Set numberString = numberStrings(i).stringx
+		Set trimmedNumberString = strTrim(numberString)
+		success = nCreateNumberFromDecimalStringWithCheck(trimmedNumberString, numberReference, errorMessage)
+		numbers(i) = numberReference.numberValue
+
+		Call FreeStringReference(numberStrings(i))
+		EraseArray trimmedNumberString 
+		i = i + 1
+	WEnd
+
+	EraseArray numberStrings 
+	Set numberReference = Nothing
+
+	Set numberArrayReference.numberArray = numbers
+
+	nStringToNumberArrayWithCheck = success
+End Function
+
+
+Public Function Negate(ByVal x)
+	Negate = -x
+End Function
+
+
+Public Function Positive(ByVal x)
+	Positive = +x
+End Function
+
+
+Public Function Factorial(ByVal x)
+	Dim i, f
+
+	f = 1
+
+	i = 2
+	While i <= x
+		f = f*i
+		i = i + 1
+	WEnd
+
+	Factorial = f
+End Function
+
+
+Public Function Roundx(ByVal x)
+	Roundx = Floor(x + 0.5)
+End Function
+
+
+Public Function RoundToDigits(ByVal element, ByVal digitsAfterPoint)
+	RoundToDigits = Roundx(element*Pow(10, digitsAfterPoint))/Pow(10, digitsAfterPoint)
+End Function
+
+
+Public Function BankersRound(ByVal x)
+	Dim r
+
+	If Absolute(x - Truncatex(x)) = 0.5 Then
+		If Not DivisibleBy(Roundx(x), 2) Then
+			r = Roundx(x) - 1
+		Else
+			r = Roundx(x)
+		End If
+	Else
+		r = Roundx(x)
+	End If
+
+	BankersRound = r
+End Function
+
+
+Public Function Ceil(ByVal x)
+	Ceil = Ceiling(x)
+End Function
+
+
+Public Function Floorx(ByVal x)
+	Floorx = Floor(x)
+End Function
+
+
+Public Function Truncatex(ByVal x)
+	Dim t
+
+	If x >= 0 Then
+		t = Floor(x)
+	Else
+		t = Ceiling(x)
+	End If
+
+	Truncatex = t
+End Function
+
+
+Public Function Absolute(ByVal x)
+	Absolute = Abs(x)
+End Function
+
+
+Public Function Logarithm(ByVal x)
+	Logarithm = Log10(x)
+End Function
+
+
+Public Function NaturalLogarithm(ByVal x)
+	NaturalLogarithm = Log(x)
+End Function
+
+
+Public Function Sinx(ByVal x)
+	Sinx = Sin(x)
+End Function
+
+
+Public Function Cosx(ByVal x)
+	Cosx = Cos(x)
+End Function
+
+
+Public Function Tanx(ByVal x)
+	Tanx = Tan(x)
+End Function
+
+
+Public Function Asinx(ByVal x)
+	Asinx = Asin(x)
+End Function
+
+
+Public Function Acosx(ByVal x)
+	Acosx = Acos(x)
+End Function
+
+
+Public Function Atanx(ByVal x)
+	Atanx = Atn(x)
+End Function
+
+
+Public Function Atan2x(ByVal y, ByVal x)
+	Dim a
+
+	' Atan2 is an invalid operation when x = 0 and y = 0, but this method does not return errors.
+	a = 0
+
+	If x > 0 Then
+		a = Atanx(y/x)
+	ElseIf x < 0 And y >= 0 Then
+		a = Atanx(y/x) + Pi
+	ElseIf x < 0 And y < 0 Then
+		a = Atanx(y/x) - Pi
+	ElseIf x = 0 And y > 0 Then
+		a = Pi/2
+	ElseIf x = 0 And y < 0 Then
+		a = -Pi/2
+	End If
+
+	Atan2x = a
+End Function
+
+
+Public Function Squareroot(ByVal x)
+	Squareroot = Sqr(x)
+End Function
+
+
+Public Function Expx(ByVal x)
+	Expx = Exp(x)
+End Function
+
+
+Public Function DivisibleBy(ByVal a, ByVal b)
+	DivisibleBy = ((Modulus(a, b)) = 0)
+End Function
+
+
+Public Function Combinations(ByVal n, ByVal k)
+	Dim i, j, c
+
+	c = 1
+	j = 1
+	i = n - k + 1
+
+	
+	While i <= n
+		c = c*i
+		c = c/j
+
+		i = i + 1
+		j = j + 1
+	WEnd
+
+	Combinations = c
+End Function
+
+
+Public Function Permutations(ByVal n, ByVal k)
+	Dim i, c
+
+	c = 1
+
+	i = n - k + 1
+	While i <= n
+		c = c*i
+		i = i + 1
+	WEnd
+
+	Permutations = c
+End Function
+
+
+Public Function EpsilonCompare(ByVal a, ByVal b, ByVal epsilon)
+	EpsilonCompare = Abs(a - b) < epsilon
+End Function
+
+
+Public Function GreatestCommonDivisor(ByVal a, ByVal b)
+	Dim t
+
+	
+	While b <> 0
+		t = b
+		b = Modulus(a, b)
+		a = t
+	WEnd
+
+	GreatestCommonDivisor = a
+End Function
+
+
+Public Function GCDWithSubtraction(ByVal a, ByVal b)
+	Dim g
+
+	If a = 0 Then
+		g = b
+	Else
+		
+		While b <> 0
+			If a > b Then
+				a = a - b
+			Else
+				b = b - a
+			End If
+		WEnd
+
+		g = a
+	End If
+
+	GCDWithSubtraction = g
+End Function
+
+
+Public Function IsInteger(ByVal a)
+	IsInteger = (a - Floor(a)) = 0
+End Function
+
+
+Public Function GreatestCommonDivisorWithCheck(ByVal a, ByVal b, gcdReference)
+	Dim success
+	Dim gcd
+
+	If IsInteger(a) And IsInteger(b) Then
+		gcd = GreatestCommonDivisor(a, b)
+		gcdReference.numberValue = gcd
+		success = true
+	Else
+		success = false
+	End If
+
+	GreatestCommonDivisorWithCheck = success
+End Function
+
+
+Public Function LeastCommonMultiple(ByVal a, ByVal b)
+	Dim lcm
+
+	If a > 0 And b > 0 Then
+		lcm = Abs(a*b)/GreatestCommonDivisor(a, b)
+	Else
+		lcm = 0
+	End If
+
+	LeastCommonMultiple = lcm
+End Function
+
+
+Public Function Signx(ByVal a)
+	Dim s
+
+	If a > 0 Then
+		s = 1
+	ElseIf a < 0 Then
+		s = -1
+	Else
+		s = 0
+	End If
+
+	Signx = s
+End Function
+
+
+Public Function Maxx(ByVal a, ByVal b)
+	Maxx = Max(a, b)
+End Function
+
+
+Public Function Minx(ByVal a, ByVal b)
+	Minx = Min(a, b)
+End Function
+
+
+Public Function Power(ByVal a, ByVal b)
+	Power = Pow(a, b)
+End Function
+
+
+Public Function Gamma(ByVal x)
+	Gamma = LanczosApproximation(x)
+End Function
+
+
+Public Function LogGamma(ByVal x)
+	LogGamma = Log(Gamma(x))
+End Function
+
+
+Public Function LanczosApproximation(ByVal z)
+	Dim p
+	Dim i, y, t, x
+
+	Set p = allocArray(8)
+	p(0) = 676.5203681218851
+	p(1) = -1259.1392167224028
+	p(2) = 771.32342877765313
+	p(3) = -176.61502916214059
+	p(4) = 12.507343278686905
+	p(5) = -0.13857109526572012
+	p(6) = 9.9843695780195716e-6
+	p(7) = 1.5056327351493116e-7
+
+	If z < 0.5 Then
+		y = Pi/(Sin(Pi*z)*LanczosApproximation(1 - z))
+	Else
+		z = z - 1
+		x = 0.99999999999980993
+		i = 0
+		While i < p.Count
+			x = x + p(i)/(z + i + 1)
+			i = i + 1
+		WEnd
+		t = z + p.Count - 0.5
+		y = Sqr(2*Pi)*Pow(t, z + 0.5)*Exp(-t)*x
+	End If
+
+	LanczosApproximation = y
+End Function
+
+
+Public Function Beta(ByVal x, ByVal y)
+	Beta = Gamma(x)*Gamma(y)/Gamma(x + y)
+End Function
+
+
+Public Function Sinhx(ByVal x)
+	Sinhx = (Exp(x) - Exp(-x))/2
+End Function
+
+
+Public Function Coshx(ByVal x)
+	Coshx = (Exp(x) + Exp(-x))/2
+End Function
+
+
+Public Function Tanhx(ByVal x)
+	Tanhx = Sinhx(x)/Coshx(x)
+End Function
+
+
+Public Function Cot(ByVal x)
+	Cot = 1/Tan(x)
+End Function
+
+
+Public Function Sec(ByVal x)
+	Sec = 1/Cos(x)
+End Function
+
+
+Public Function Csc(ByVal x)
+	Csc = 1/Sin(x)
+End Function
+
+
+Public Function Coth(ByVal x)
+	Coth = Coshx(x)/Sinhx(x)
+End Function
+
+
+Public Function Sech(ByVal x)
+	Sech = 1/Coshx(x)
+End Function
+
+
+Public Function Csch(ByVal x)
+	Csch = 1/Sinhx(x)
+End Function
+
+
+Public Function Errorx(ByVal x)
+	Dim y, t, tau, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10
+
+	If x = 0 Then
+		y = 0
+	ElseIf x < 0 Then
+		y = -Errorx(-x)
+	Else
+		c1 = -1.26551223
+		c2 = +1.00002368
+		c3 = +0.37409196
+		c4 = +0.09678418
+		c5 = -0.18628806
+		c6 = +0.27886807
+		c7 = -1.13520398
+		c8 = +1.48851587
+		c9 = -0.82215223
+		c10 = +0.17087277
+
+		t = 1/(1 + 0.5*Abs(x))
+
+		tau = t*Exp(-Pow(x, 2) + c1 + t*(c2 + t*(c3 + t*(c4 + t*(c5 + t*(c6 + t*(c7 + t*(c8 + t*(c9 + t*c10)))))))))
+
+		y = 1 - tau
+	End If
+
+	Errorx = y
+End Function
+
+
+Public Function ErrorInverse(ByVal x)
+	Dim y, a, t
+
+	a = (8*(Pi - 3))/(3*Pi*(4 - Pi))
+
+	t = 2/(Pi*a) + Log(1 - Pow(x, 2))/2
+	y = Signx(x)*Sqr(Sqr(Pow(t, 2) - Log(1 - Pow(x, 2))/a) - t)
+
+	ErrorInverse = y
+End Function
+
+
+Public Function FallingFactorial(ByVal x, ByVal n)
+	Dim k, y
+
+	y = 1
+
+	k = 0
+	While k <= n - 1
+		y = y*(x - k)
+		k = k + 1
+	WEnd
+
+	FallingFactorial = y
+End Function
+
+
+Public Function RisingFactorial(ByVal x, ByVal n)
+	Dim k, y
+
+	y = 1
+
+	k = 0
+	While k <= n - 1
+		y = y*(x + k)
+		k = k + 1
+	WEnd
+
+	RisingFactorial = y
+End Function
+
+
+Public Function Hypergeometric(ByVal a, ByVal b, ByVal c, ByVal z, ByVal maxIterations, ByVal precision)
+	Dim y
+
+	If Abs(z) >= 0.5 Then
+		y = Pow(1 - z, -a)*HypergeometricDirect(a, c - b, c, z/(z - 1), maxIterations, precision)
+	Else
+		y = HypergeometricDirect(a, b, c, z, maxIterations, precision)
+	End If
+
+	Hypergeometric = y
+End Function
+
+
+Public Function HypergeometricDirect(ByVal a, ByVal b, ByVal c, ByVal z, ByVal maxIterations, ByVal precision)
+	Dim y, yp, n
+	Dim done
+
+	y = 0
+	done = false
+
+	n = 0
+	While n < maxIterations And Not done
+		yp = RisingFactorial(a, n)*RisingFactorial(b, n)/RisingFactorial(c, n)*Pow(z, n)/Factorial(n)
+		If Abs(yp) < precision Then
+			done = true
+		End If
+		y = y + yp
+		n = n + 1
+	WEnd
+
+	HypergeometricDirect = y
+End Function
+
+
+Public Function BernouilliNumber(ByVal n)
+	BernouilliNumber = AkiyamaTanigawaAlgorithm(n)
+End Function
+
+
+Public Function AkiyamaTanigawaAlgorithm(ByVal n)
+	Dim m, j, B
+	Dim A
+
+	Set A = allocArray(n + 1)
+
+	m = 0
+	While m <= n
+		A(m) = 1/(m + 1)
+		j = m
+		While j >= 1
+			A(j - 1) = j*(A(j - 1) - A(j))
+			j = j - 1
+		WEnd
+		m = m + 1
+	WEnd
+
+	B = A(0)
+
+	EraseArray A 
+
+	AkiyamaTanigawaAlgorithm = B
+End Function
+
+
+Public Function D15Add(ByVal a, ByVal b, overflow)
+	Dim x
+
+	x = a + b
+
+	If x > D15MaxValue() Or x < D15MinValue() Then
+		overflow.booleanValue = true
+		x = 0
+	Else
+		overflow.booleanValue = false
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Add = x
+End Function
+
+
+Public Function RoundTo15Digits(ByVal x)
+	Dim p
+
+	p = Floor(Log10(x))
+	x = x*Pow(10, 15 - p)
+	x = Roundx(x)
+	x = x/Pow(10, 15 - p)
+
+	RoundTo15Digits = x
+End Function
+
+
+Public Function D15MaxValue()
+	D15MaxValue = +9.99999999999999e99
+End Function
+
+
+Public Function D15MinValue()
+	D15MinValue = -9.99999999999999e99
+End Function
+
+
+Public Function D15Multiply(ByVal a, ByVal b, overflow)
+	Dim x
+
+	x = a*b
+
+	If x > D15MaxValue() Or x < D15MinValue() Then
+		overflow.booleanValue = true
+		x = 0
+	Else
+		overflow.booleanValue = false
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Multiply = x
+End Function
+
+
+Public Function D15Divide(ByVal a, ByVal b, reminder, overflow, invalidOperation)
+	Dim x, r
+
+	If b <> 0 Then
+		invalidOperation.booleanValue = false
+
+		x = a/b
+		r = Modulus(a, b)
+
+		If x > D15MaxValue() Or x < D15MinValue() Then
+			overflow.booleanValue = true
+			x = 0
+			r = 0
+		Else
+			overflow.booleanValue = false
+			x = RoundTo15Digits(x)
+			r = RoundTo15Digits(r)
+		End If
+	Else
+		invalidOperation.booleanValue = true
+		overflow.booleanValue = false
+		x = 0
+		r = 0
+	End If
+
+	reminder.numberValue = r
+
+	D15Divide = x
+End Function
+
+
+Public Function D15Exponentiation(ByVal a, ByVal b, overflow, invalidOperation)
+	Dim x
+
+	If a = 0 And b = 0 Then
+		invalidOperation.booleanValue = true
+		overflow.booleanValue = false
+		x = 0
+	ElseIf a < 0 And Not IsInteger(b) Then
+		invalidOperation.booleanValue = true
+		overflow.booleanValue = false
+		x = 0
+	Else
+		invalidOperation.booleanValue = false
+
+		x = Pow(a, b)
+
+		If x > D15MaxValue() Or x < D15MinValue() Then
+			overflow.booleanValue = true
+			x = 0
+		Else
+			overflow.booleanValue = false
+			x = RoundTo15Digits(x)
+		End If
+	End If
+
+	D15Exponentiation = x
+End Function
+
+
+Public Function D15Modulus(ByVal a, ByVal b, invalidOperation)
+	Dim x
+
+	If a < 0 Or b = 0 Or b < 0 Then
+		invalidOperation.booleanValue = true
+		x = 0
+	Else
+		invalidOperation.booleanValue = false
+		x = Modulus(a, b)
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Modulus = x
+End Function
+
+
+Public Function D15Logarithm(ByVal a, invalidOperation)
+	Dim x
+
+	If a <= 0 Then
+		invalidOperation.booleanValue = true
+		x = 0
+	Else
+		invalidOperation.booleanValue = false
+		x = Log10(a)
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Logarithm = x
+End Function
+
+
+Public Function D15NaturalLogarithm(ByVal a, invalidOperation)
+	Dim x
+
+	If a <= 0 Then
+		invalidOperation.booleanValue = true
+		x = 0
+	Else
+		invalidOperation.booleanValue = false
+		x = Log(a)
+		x = RoundTo15Digits(x)
+	End If
+
+	D15NaturalLogarithm = x
+End Function
+
+
+Public Function D15Sin(ByVal a)
+	Dim x
+
+	x = Sin(a)
+	x = RoundTo15Digits(x)
+
+	D15Sin = x
+End Function
+
+
+Public Function D15Cos(ByVal x)
+	Dim a, y, piBy2Part1, piBy2Part2, limit, f
+
+	x = Abs(x)
+
+	limit = Pi + 3.1/2
+
+	If x > limit Then
+		f = Floor(x/Pi)
+		x = x - Pi*f
+	End If
+
+	piBy2Part1 = +1.57079632679490
+	piBy2Part2 = -3.38076867830836e-15
+
+	If x > 3.1/2 And x < 3.3/2 Then
+		a = x - piBy2Part1
+		a = Round(a*Pow(10, 15))/Pow(10, 15)
+		a = a - piBy2Part2
+		y = -Sin(a)
+	Else
+		y = Cos(x)
+		y = RoundTo15Digits(y)
+	End If
+
+	D15Cos = y
+End Function
+
+
+Public Function D15Tan(ByVal a, overflow)
+	Dim x
+
+	x = Tan(a)
+
+	If x > D15MaxValue() Or x < D15MinValue() Then
+		overflow.booleanValue = true
+		x = 0
+	Else
+		overflow.booleanValue = false
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Tan = x
+End Function
+
+
+Public Function D15Asin(ByVal a, invalidOperation)
+	Dim x
+
+	If a < -1 Or a > 1 Then
+		invalidOperation.booleanValue = true
+		x = 0
+	Else
+		invalidOperation.booleanValue = false
+		x = Asin(a)
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Asin = x
+End Function
+
+
+Public Function D15Acos(ByVal a, invalidOperation)
+	Dim x
+
+	If a < -1 Or a > 1 Then
+		invalidOperation.booleanValue = true
+		x = 0
+	Else
+		invalidOperation.booleanValue = false
+		x = Acos(a)
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Acos = x
+End Function
+
+
+Public Function D15Atan(ByVal a)
+	Dim x
+
+	x = Atn(a)
+	x = RoundTo15Digits(x)
+
+	D15Atan = x
+End Function
+
+
+Public Function D15Sqrt(ByVal a)
+	Dim x
+
+	x = Sqr(a)
+	x = RoundTo15Digits(x)
+
+	D15Sqrt = x
+End Function
+
+
+Public Function D15Exponential(ByVal a, overflow)
+	Dim x
+
+	x = Exp(a)
+
+	If x > D15MaxValue() Or x < D15MinValue() Then
+		overflow.booleanValue = true
+		x = 0
+	Else
+		overflow.booleanValue = false
+		x = RoundTo15Digits(x)
+	End If
+
+	D15Exponential = x
+End Function
+
+
+Public Function Decimal15E2ToString(ByVal decimal)
+	Dim multiplier, inc, i, d
+	Dim exponent
+	Dim done, isPositive, isPositiveExponent
+	Dim result
+	Dim len
+
+	len = 21
+	' 1+1+1+14+1+1+2 -- "+0.00000000000000e+00"
+	Set result = allocArray(len)
+
+	done = false
+	exponent = 0
+
+	If decimal < 0 Then
+		isPositive = false
+		decimal = -decimal
+	Else
+		isPositive = true
+	End If
+
+	If decimal = 0 Then
+		done = true
+	End If
+
+	If Not done Then
+		multiplier = 0
+		inc = 0
+
+		If decimal < 1 Then
+			multiplier = 10
+			inc = -1
+		ElseIf decimal >= 10 Then
+			multiplier = 0.1
+			inc = 1
+		Else
+			done = true
+		End If
+
+		If Not done Then
+			exponent = Round(Log10(decimal))
+			exponent = Min(99, exponent)
+			exponent = Max(-99, exponent)
+
+			decimal = decimal/Pow(10, exponent)
+
+			' Adjust
+			
+			While (decimal >= 10 Or decimal < 1) And Abs(exponent) < 99
+				decimal = decimal*multiplier
+				exponent = exponent + inc
+			WEnd
+		End If
+	End If
+
+	isPositiveExponent = exponent >= 0
+	If Not isPositiveExponent Then
+		exponent = -exponent
+	End If
+
+	If isPositive Then
+		result(0) = "+"
+	Else
+		result(0) = "-"
+	End If
+
+	decimal = Round(decimal*Pow(10, 14))
+
+	d = Floor(decimal/Pow(10, 14))
+	result(1) = SingleDigitNumberToCharacter(d)
+	decimal = decimal - d*Pow(10, 14)
+
+	result(2) = "."
+
+	i = 0
+	While i < 14
+		d = Floor(decimal/Pow(10, 13 - i))
+		result(3 + i) = SingleDigitNumberToCharacter(d)
+		decimal = decimal - d*Pow(10, 13 - i)
+		i = i + 1
+	WEnd
+
+	result(17) = "e"
+
+	If isPositiveExponent Then
+		result(18) = "+"
+	Else
+		result(18) = "-"
+	End If
+
+	result(19) = SingleDigitNumberToCharacter(Floor(exponent/10))
+	result(20) = SingleDigitNumberToCharacter(Floor(Modulus(exponent, 10)))
+
+	Set Decimal15E2ToString = result
+End Function
+
+
+Public Function SingleDigitNumberToCharacter(ByVal n)
+	Dim c
+
+	c = "0"
+	If n = 0 Then
+		c = "0"
+	ElseIf n = 1 Then
+		c = "1"
+	ElseIf n = 2 Then
+		c = "2"
+	ElseIf n = 3 Then
+		c = "3"
+	ElseIf n = 4 Then
+		c = "4"
+	ElseIf n = 5 Then
+		c = "5"
+	ElseIf n = 6 Then
+		c = "6"
+	ElseIf n = 7 Then
+		c = "7"
+	ElseIf n = 8 Then
+		c = "8"
+	ElseIf n = 9 Then
+		c = "9"
+	End If
+
+	SingleDigitNumberToCharacter = c
+End Function
+
+
+Public Function StringToNumberArray(stringx)
+	Dim i
+	Dim arrayx
+
+	Set arrayx = allocArray(stringx.Count)
+
+	i = 0
+	While i < stringx.Count
+		arrayx(i) = Ascw(stringx(i))
+		i = i + 1
+	WEnd
+	Set StringToNumberArray = arrayx
+End Function
+
+
+Public Function NumberArrayToString(arrayx)
+	Dim i
+	Dim stringx
+
+	Set stringx = allocArray(arrayx.Count)
+
+	i = 0
+	While i < arrayx.Count
+		stringx(i) = Chrw(arrayx(i))
+		i = i + 1
+	WEnd
+	Set NumberArrayToString = stringx
+End Function
+
+
+Public Function NumberArraysEqual(a, b)
+	Dim equal
+	Dim i
+
+	equal = true
+	If a.Count = b.Count Then
+		i = 0
+		While i < a.Count And equal
+			If a(i) <> b(i) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	NumberArraysEqual = equal
+End Function
+
+
+Public Function BooleanArraysEqual(a, b)
+	Dim equal
+	Dim i
+
+	equal = true
+	If a.Count = b.Count Then
+		i = 0
+		While i < a.Count And equal
+			If a(i) <> b(i) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	BooleanArraysEqual = equal
+End Function
+
+
+Public Function StringsEqual(a, b)
+	Dim equal
+	Dim i
+
+	equal = true
+	If a.Count = b.Count Then
+		i = 0
+		While i < a.Count And equal
+			If a(i) <> b(i) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	StringsEqual = equal
+End Function
+
+
+Public Sub FillNumberArray(a, ByVal value)
+	Dim i
+
+	i = 0
+	While i < a.Count
+		a(i) = value
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Sub FillString(a, ByVal value)
+	Dim i
+
+	i = 0
+	While i < a.Count
+		a(i) = value
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Sub FillBooleanArray(a, ByVal value)
+	Dim i
+
+	i = 0
+	While i < a.Count
+		a(i) = value
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Function FillNumberArrayRange(a, ByVal value, ByVal from, ByVal tox)
+	Dim i, length
+	Dim success
+
+	If from >= 0 And from <= a.Count And tox >= 0 And tox <= a.Count And from <= tox Then
+		length = tox - from
+		i = 0
+		While i < length
+			a(from + i) = value
+			i = i + 1
+		WEnd
+
+		success = true
+	Else
+		success = false
+	End If
+
+	FillNumberArrayRange = success
+End Function
+
+
+Public Function FillBooleanArrayRange(a, ByVal value, ByVal from, ByVal tox)
+	Dim i, length
+	Dim success
+
+	If from >= 0 And from <= a.Count And tox >= 0 And tox <= a.Count And from <= tox Then
+		length = tox - from
+		i = 0
+		While i < length
+			a(from + i) = value
+			i = i + 1
+		WEnd
+
+		success = true
+	Else
+		success = false
+	End If
+
+	FillBooleanArrayRange = success
+End Function
+
+
+Public Function FillStringRange(a, ByVal value, ByVal from, ByVal tox)
+	Dim i, length
+	Dim success
+
+	If from >= 0 And from <= a.Count And tox >= 0 And tox <= a.Count And from <= tox Then
+		length = tox - from
+		i = 0
+		While i < length
+			a(from + i) = value
+			i = i + 1
+		WEnd
+
+		success = true
+	Else
+		success = false
+	End If
+
+	FillStringRange = success
+End Function
+
+
+Public Function CopyNumberArray(a)
+	Dim i
+	Dim n
+
+	Set n = allocArray(a.Count)
+
+	i = 0
+	While i < a.Count
+		n(i) = a(i)
+		i = i + 1
+	WEnd
+
+	Set CopyNumberArray = n
+End Function
+
+
+Public Function CopyBooleanArray(a)
+	Dim i
+	Dim n
+
+	Set n = allocArray(a.Count)
+
+	i = 0
+	While i < a.Count
+		n(i) = a(i)
+		i = i + 1
+	WEnd
+
+	Set CopyBooleanArray = n
+End Function
+
+
+Public Function CopyString(a)
+	Dim i
+	Dim n
+
+	Set n = allocArray(a.Count)
+
+	i = 0
+	While i < a.Count
+		n(i) = a(i)
+		i = i + 1
+	WEnd
+
+	Set CopyString = n
+End Function
+
+
+Public Function CopyNumberArrayRange(a, ByVal from, ByVal tox, copyReference)
+	Dim i, length
+	Dim n
+	Dim success
+
+	If from >= 0 And from <= a.Count And tox >= 0 And tox <= a.Count And from <= tox Then
+		length = tox - from
+		Set n = allocArray(length)
+
+		i = 0
+		While i < length
+			n(i) = a(from + i)
+			i = i + 1
+		WEnd
+
+		Set copyReference.numberArray = n
+		success = true
+	Else
+		success = false
+	End If
+
+	CopyNumberArrayRange = success
+End Function
+
+
+Public Function CopyBooleanArrayRange(a, ByVal from, ByVal tox, copyReference)
+	Dim i, length
+	Dim n
+	Dim success
+
+	If from >= 0 And from <= a.Count And tox >= 0 And tox <= a.Count And from <= tox Then
+		length = tox - from
+		Set n = allocArray(length)
+
+		i = 0
+		While i < length
+			n(i) = a(from + i)
+			i = i + 1
+		WEnd
+
+		Set copyReference.booleanArray = n
+		success = true
+	Else
+		success = false
+	End If
+
+	CopyBooleanArrayRange = success
+End Function
+
+
+Public Function CopyStringRange(a, ByVal from, ByVal tox, copyReference)
+	Dim i, length
+	Dim n
+	Dim success
+
+	If from >= 0 And from <= a.Count And tox >= 0 And tox <= a.Count And from <= tox Then
+		length = tox - from
+		Set n = allocArray(length)
+
+		i = 0
+		While i < length
+			n(i) = a(from + i)
+			i = i + 1
+		WEnd
+
+		Set copyReference.stringx = n
+		success = true
+	Else
+		success = false
+	End If
+
+	CopyStringRange = success
+End Function
+
+
+Public Function IsLastElement(ByVal length, ByVal index)
+	IsLastElement = index + 1 = length
+End Function
+
+
+Public Function CreateNumberArray(ByVal length, ByVal value)
+	Dim arrayx
+
+	Set arrayx = allocArray(length)
+	Call FillNumberArray(arrayx, value)
+
+	Set CreateNumberArray = arrayx
+End Function
+
+
+Public Function CreateBooleanArray(ByVal length, ByVal value)
+	Dim arrayx
+
+	Set arrayx = allocArray(length)
+	Call FillBooleanArray(arrayx, value)
+
+	Set CreateBooleanArray = arrayx
+End Function
+
+
+Public Function CreateString(ByVal length, ByVal value)
+	Dim arrayx
+
+	Set arrayx = allocArray(length)
+	Call FillString(arrayx, value)
+
+	Set CreateString = arrayx
+End Function
+
+
+Public Sub SwapElementsOfNumberArray(A, ByVal ai, ByVal bi)
+	Dim tmp
+
+	tmp = A(ai)
+	A(ai) = A(bi)
+	A(bi) = tmp
+End Sub
+
+
+Public Sub SwapElementsOfStringArray(A, ByVal ai, ByVal bi)
+	Dim tmp
+
+	Set tmp = A.stringArray(ai)
+	Set A.stringArray(ai) = A.stringArray(bi)
+	Set A.stringArray(bi) = tmp
+End Sub
+
+
+Public Sub ReverseNumberArray(arrayx)
+	Dim i
+
+	i = 0
+	While i < arrayx.Count/2
+		Call SwapElementsOfNumberArray(arrayx, i, arrayx.Count - i - 1)
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Function charToLowerCase(ByVal character)
+	Dim toReturn
+
+	toReturn = character
+	If character = "A" Then
+		toReturn = "a"
+	ElseIf character = "B" Then
+		toReturn = "b"
+	ElseIf character = "C" Then
+		toReturn = "c"
+	ElseIf character = "D" Then
+		toReturn = "d"
+	ElseIf character = "E" Then
+		toReturn = "e"
+	ElseIf character = "F" Then
+		toReturn = "f"
+	ElseIf character = "G" Then
+		toReturn = "g"
+	ElseIf character = "H" Then
+		toReturn = "h"
+	ElseIf character = "I" Then
+		toReturn = "i"
+	ElseIf character = "J" Then
+		toReturn = "j"
+	ElseIf character = "K" Then
+		toReturn = "k"
+	ElseIf character = "L" Then
+		toReturn = "l"
+	ElseIf character = "M" Then
+		toReturn = "m"
+	ElseIf character = "N" Then
+		toReturn = "n"
+	ElseIf character = "O" Then
+		toReturn = "o"
+	ElseIf character = "P" Then
+		toReturn = "p"
+	ElseIf character = "Q" Then
+		toReturn = "q"
+	ElseIf character = "R" Then
+		toReturn = "r"
+	ElseIf character = "S" Then
+		toReturn = "s"
+	ElseIf character = "T" Then
+		toReturn = "t"
+	ElseIf character = "U" Then
+		toReturn = "u"
+	ElseIf character = "V" Then
+		toReturn = "v"
+	ElseIf character = "W" Then
+		toReturn = "w"
+	ElseIf character = "X" Then
+		toReturn = "x"
+	ElseIf character = "Y" Then
+		toReturn = "y"
+	ElseIf character = "Z" Then
+		toReturn = "z"
+	End If
+
+	charToLowerCase = toReturn
+End Function
+
+
+Public Function charToUpperCase(ByVal character)
+	Dim toReturn
+
+	toReturn = character
+	If character = "a" Then
+		toReturn = "A"
+	ElseIf character = "b" Then
+		toReturn = "B"
+	ElseIf character = "c" Then
+		toReturn = "C"
+	ElseIf character = "d" Then
+		toReturn = "D"
+	ElseIf character = "e" Then
+		toReturn = "E"
+	ElseIf character = "f" Then
+		toReturn = "F"
+	ElseIf character = "g" Then
+		toReturn = "G"
+	ElseIf character = "h" Then
+		toReturn = "H"
+	ElseIf character = "i" Then
+		toReturn = "I"
+	ElseIf character = "j" Then
+		toReturn = "J"
+	ElseIf character = "k" Then
+		toReturn = "K"
+	ElseIf character = "l" Then
+		toReturn = "L"
+	ElseIf character = "m" Then
+		toReturn = "M"
+	ElseIf character = "n" Then
+		toReturn = "N"
+	ElseIf character = "o" Then
+		toReturn = "O"
+	ElseIf character = "p" Then
+		toReturn = "P"
+	ElseIf character = "q" Then
+		toReturn = "Q"
+	ElseIf character = "r" Then
+		toReturn = "R"
+	ElseIf character = "s" Then
+		toReturn = "S"
+	ElseIf character = "t" Then
+		toReturn = "T"
+	ElseIf character = "u" Then
+		toReturn = "U"
+	ElseIf character = "v" Then
+		toReturn = "V"
+	ElseIf character = "w" Then
+		toReturn = "W"
+	ElseIf character = "x" Then
+		toReturn = "X"
+	ElseIf character = "y" Then
+		toReturn = "Y"
+	ElseIf character = "z" Then
+		toReturn = "Z"
+	End If
+
+	charToUpperCase = toReturn
+End Function
+
+
+Public Function charIsUpperCase(ByVal character)
+	Dim isUpper
+
+	isUpper = true
+	If character = "A" Then
+	ElseIf character = "B" Then
+	ElseIf character = "C" Then
+	ElseIf character = "D" Then
+	ElseIf character = "E" Then
+	ElseIf character = "F" Then
+	ElseIf character = "G" Then
+	ElseIf character = "H" Then
+	ElseIf character = "I" Then
+	ElseIf character = "J" Then
+	ElseIf character = "K" Then
+	ElseIf character = "L" Then
+	ElseIf character = "M" Then
+	ElseIf character = "N" Then
+	ElseIf character = "O" Then
+	ElseIf character = "P" Then
+	ElseIf character = "Q" Then
+	ElseIf character = "R" Then
+	ElseIf character = "S" Then
+	ElseIf character = "T" Then
+	ElseIf character = "U" Then
+	ElseIf character = "V" Then
+	ElseIf character = "W" Then
+	ElseIf character = "X" Then
+	ElseIf character = "Y" Then
+	ElseIf character = "Z" Then
+	Else
+		isUpper = false
+	End If
+
+	charIsUpperCase = isUpper
+End Function
+
+
+Public Function charIsLowerCase(ByVal character)
+	Dim isLower
+
+	isLower = true
+	If character = "a" Then
+	ElseIf character = "b" Then
+	ElseIf character = "c" Then
+	ElseIf character = "d" Then
+	ElseIf character = "e" Then
+	ElseIf character = "f" Then
+	ElseIf character = "g" Then
+	ElseIf character = "h" Then
+	ElseIf character = "i" Then
+	ElseIf character = "j" Then
+	ElseIf character = "k" Then
+	ElseIf character = "l" Then
+	ElseIf character = "m" Then
+	ElseIf character = "n" Then
+	ElseIf character = "o" Then
+	ElseIf character = "p" Then
+	ElseIf character = "q" Then
+	ElseIf character = "r" Then
+	ElseIf character = "s" Then
+	ElseIf character = "t" Then
+	ElseIf character = "u" Then
+	ElseIf character = "v" Then
+	ElseIf character = "w" Then
+	ElseIf character = "x" Then
+	ElseIf character = "y" Then
+	ElseIf character = "z" Then
+	Else
+		isLower = false
+	End If
+
+	charIsLowerCase = isLower
+End Function
+
+
+Public Function charIsLetter(ByVal character)
+	charIsLetter = charIsUpperCase(character) Or charIsLowerCase(character)
+End Function
+
+
+Public Function charIsNumber(ByVal character)
+	Dim isNumberx
+
+	isNumberx = true
+	If character = "0" Then
+	ElseIf character = "1" Then
+	ElseIf character = "2" Then
+	ElseIf character = "3" Then
+	ElseIf character = "4" Then
+	ElseIf character = "5" Then
+	ElseIf character = "6" Then
+	ElseIf character = "7" Then
+	ElseIf character = "8" Then
+	ElseIf character = "9" Then
+	Else
+		isNumberx = false
+	End If
+
+	charIsNumber = isNumberx
+End Function
+
+
+Public Function charIsWhiteSpace(ByVal character)
+	Dim isWhiteSpacex
+
+	isWhiteSpacex = true
+	If character = " " Then
+	ElseIf character = "" + Chrw(9) + "" Then
+	ElseIf character = "" + vblf + "" Then
+	ElseIf character = "" + vbcr + "" Then
+	Else
+		isWhiteSpacex = false
+	End If
+
+	charIsWhiteSpace = isWhiteSpacex
+End Function
+
+
+Public Function charIsSymbol(ByVal character)
+	Dim isSymbolx
+
+	isSymbolx = true
+	If character = "!" Then
+	ElseIf character = """" Then
+	ElseIf character = "#" Then
+	ElseIf character = "$" Then
+	ElseIf character = "%" Then
+	ElseIf character = "&" Then
+	ElseIf character = "\'" Then
+	ElseIf character = "(" Then
+	ElseIf character = ")" Then
+	ElseIf character = "*" Then
+	ElseIf character = "+" Then
+	ElseIf character = "," Then
+	ElseIf character = "-" Then
+	ElseIf character = "." Then
+	ElseIf character = "/" Then
+	ElseIf character = ":" Then
+	ElseIf character = ";" Then
+	ElseIf character = "<" Then
+	ElseIf character = "=" Then
+	ElseIf character = ">" Then
+	ElseIf character = "?" Then
+	ElseIf character = "@" Then
+	ElseIf character = "[" Then
+	ElseIf character = "\" Then
+	ElseIf character = "]" Then
+	ElseIf character = "^" Then
+	ElseIf character = "_" Then
+	ElseIf character = "`" Then
+	ElseIf character = "{" Then
+	ElseIf character = "|" Then
+	ElseIf character = "}" Then
+	ElseIf character = "~" Then
+	Else
+		isSymbolx = false
+	End If
+
+	charIsSymbol = isSymbolx
+End Function
+
+
+Public Function charCharacterIsBefore(ByVal a, ByVal b)
+	Dim ad, bd
+
+	ad = Ascw(a)
+	bd = Ascw(b)
+
+	charCharacterIsBefore = ad < bd
+End Function
+
+
+Public Function charDecimalDigitToCharacter(ByVal digit)
+	Dim c
+	If digit = 1 Then
+		c = "1"
+	ElseIf digit = 2 Then
+		c = "2"
+	ElseIf digit = 3 Then
+		c = "3"
+	ElseIf digit = 4 Then
+		c = "4"
+	ElseIf digit = 5 Then
+		c = "5"
+	ElseIf digit = 6 Then
+		c = "6"
+	ElseIf digit = 7 Then
+		c = "7"
+	ElseIf digit = 8 Then
+		c = "8"
+	ElseIf digit = 9 Then
+		c = "9"
+	Else
+		c = "0"
+	End If
+	charDecimalDigitToCharacter = c
+End Function
+
+
+Public Function charCharacterToDecimalDigit(ByVal c)
+	Dim digit
+
+	If c = "1" Then
+		digit = 1
+	ElseIf c = "2" Then
+		digit = 2
+	ElseIf c = "3" Then
+		digit = 3
+	ElseIf c = "4" Then
+		digit = 4
+	ElseIf c = "5" Then
+		digit = 5
+	ElseIf c = "6" Then
+		digit = 6
+	ElseIf c = "7" Then
+		digit = 7
+	ElseIf c = "8" Then
+		digit = 8
+	ElseIf c = "9" Then
+		digit = 9
+	Else
+		digit = 0
+	End If
+
+	charCharacterToDecimalDigit = digit
+End Function
+
+
+Public Function CreateNewArrayData()
+	Dim data
+
+	Set data = New Data
+	data.isArray = true
+	data.isStruture = false
+	data.isNumber = false
+	data.isBoolean = false
+	data.isString = false
+	Set data.arrayx = CreateArray()
+
+	Set CreateNewArrayData = data
+End Function
+
+
+Public Function CreateNewStructData()
+	Dim data
+
+	Set data = New Data
+	data.isStruture = true
+	data.isArray = false
+	data.isNumber = false
+	data.isBoolean = false
+	data.isString = false
+	Set data.structure = CreateStructure()
+
+	Set CreateNewStructData = data
+End Function
+
+
+Public Function CreateStructure()
+	Dim st
+
+	Set st = New Structure
+	Set st.keys = CreateArray()
+	Set st.values = CreateArray()
+
+	Set CreateStructure = st
+End Function
+
+
+Public Function CreateNumberData(ByVal n)
+	Dim data
+
+	Set data = New Data
+	data.isNumber = true
+	data.isStruture = false
+	data.isArray = false
+	data.isBoolean = false
+	data.isString = false
+	data.number = n
+
+	Set CreateNumberData = data
+End Function
+
+
+Public Function CreateBooleanData(ByVal b)
+	Dim data
+
+	Set data = New Data
+	data.isBoolean = true
+	data.isStruture = false
+	data.isArray = false
+	data.isNumber = false
+	data.isString = false
+	data.booleanx = b
+
+	Set CreateBooleanData = data
+End Function
+
+
+Public Function CreateStringData(stringx)
+	Dim data
+
+	Set data = New Data
+	data.isString = true
+	data.isStruture = false
+	data.isArray = false
+	data.isNumber = false
+	data.isBoolean = false
+	Set data.stringx = stringx
+
+	Set CreateStringData = data
+End Function
+
+
+Public Function CreateStructData(structure)
+	Dim data
+
+	Set data = New Data
+	data.isString = false
+	data.isStruture = true
+	data.isArray = false
+	data.isNumber = false
+	data.isBoolean = false
+	Set data.structure = structure
+
+	Set CreateStructData = data
+End Function
+
+
+Public Function CreateArrayData(arrayx)
+	Dim data
+
+	Set data = New Data
+	data.isString = false
+	data.isStruture = false
+	data.isArray = true
+	data.isNumber = false
+	data.isBoolean = false
+	Set data.arrayx = arrayx
+
+	Set CreateArrayData = data
+End Function
+
+
+Public Function CreateNoTypeData()
+	Dim data
+
+	Set data = New Data
+	data.isStruture = false
+	data.isArray = false
+	data.isNumber = false
+	data.isBoolean = false
+	data.isString = false
+
+	Set CreateNoTypeData = data
+End Function
+
+
+Public Sub AddStructToArray(ar, st)
+	Dim data
+
+	Set data = CreateNewStructData()
+	Set data.structure = Nothing
+	Set data.structure = st
+
+	Call ArrayAdd(ar, data)
+End Sub
+
+
+Public Sub AddArrayToArray(ar, ar2)
+	Dim data
+
+	Set data = CreateNewArrayData()
+	Set data.arrayx = Nothing
+	Set data.arrayx = ar2
+
+	Call ArrayAdd(ar, data)
+End Sub
+
+
+Public Sub AddNumberToArray(ar, ByVal n)
+	Call ArrayAdd(ar, CreateNumberData(n))
+End Sub
+
+
+Public Sub AddBooleanToArray(ar, ByVal b)
+	Call ArrayAdd(ar, CreateBooleanData(b))
+End Sub
+
+
+Public Sub AddStringToArray(ar, str)
+	Call ArrayAdd(ar, CreateStringData(str))
+End Sub
+
+
+Public Sub AddDataToArray(ar, data)
+	Call ArrayAdd(ar, data)
+End Sub
+
+
+Public Function StructKeys(st)
+	StructKeys = ArrayLength(st.keys)
+End Function
+
+
+Public Function StructHasKey(st, key)
+	Dim i
+	Dim hasKey
+
+	hasKey = false
+	i = 0
+	While i < StructKeys(st)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			hasKey = true
+		End If
+		i = i + 1
+	WEnd
+
+	StructHasKey = hasKey
+End Function
+
+
+Public Function StructKeyIndex(st, key)
+	Dim i
+	Dim index
+
+	index = -1
+	i = 0
+	While i < StructKeys(st)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			index = i
+		End If
+		i = i + 1
+	WEnd
+
+	StructKeyIndex = index
+End Function
+
+
+Public Function GetStructKeys(st)
+	Dim keys
+	Dim nr, i
+
+	nr = StructKeys(st)
+
+	Set keys = allocArray(nr)
+
+	i = 0
+	While i < nr
+		Set keys(i) = New StringReference
+		Set keys(i).stringx = CopyString(st.keys.arrayx(i).stringx)
+		i = i + 1
+	WEnd
+
+	Set GetStructKeys = keys
+End Function
+
+
+Public Function GetStructFromStruct(st, key)
+	Dim i
+	Dim r
+
+	Set r = New Structure
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			Set r = st.values.arrayx(i).structure
+		End If
+		i = i + 1
+	WEnd
+
+	Set GetStructFromStruct = r
+End Function
+
+
+Public Function GetArrayFromStruct(st, key)
+	Dim i
+	Dim r
+
+	Set r = New Array
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			Set r = st.values.arrayx(i).arrayx
+		End If
+		i = i + 1
+	WEnd
+
+	Set GetArrayFromStruct = r
+End Function
+
+
+Public Function GetNumberFromStruct(st, key)
+	Dim i, r
+
+	r = 0
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			r = st.values.arrayx(i).number
+		End If
+		i = i + 1
+	WEnd
+
+	GetNumberFromStruct = r
+End Function
+
+
+Public Function GetBooleanFromStruct(st, key)
+	Dim i
+	Dim r
+
+	r = false
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			r = st.values.arrayx(i).booleanx
+		End If
+		i = i + 1
+	WEnd
+
+	GetBooleanFromStruct = r
+End Function
+
+
+Public Function GetStringFromStruct(st, key)
+	Dim i
+	Dim r
+
+	Set r = toArray("")
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			Set r = st.values.arrayx(i).stringx
+		End If
+		i = i + 1
+	WEnd
+
+	Set GetStringFromStruct = r
+End Function
+
+
+Public Function GetDataFromStruct(st, key)
+	Dim i
+	Dim r
+
+	Set r = New Data
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			Set r = Nothing
+			Set r = st.values.arrayx(i)
+		End If
+		i = i + 1
+	WEnd
+
+	Set GetDataFromStruct = r
+End Function
+
+
+Public Function GetDataFromStructWithCheck(st, key, foundRef)
+	Dim i
+	Dim r
+
+	Set r = New Data
+	foundRef.booleanValue = false
+	i = 0
+	While i < ArrayLength(st.keys)
+		If StringsEqual(st.keys.arrayx(i).stringx, key) Then
+			Set r = Nothing
+			foundRef.booleanValue = true
+			Set r = st.values.arrayx(i)
+		End If
+		i = i + 1
+	WEnd
+
+	Set GetDataFromStructWithCheck = r
+End Function
+
+
+Public Sub AddStructToStruct(st, key, struct)
+	Dim i
+
+	If StructHasKey(st, key) Then
+		i = StructKeyIndex(st, key)
+		Set st.values.arrayx(i).structure = Nothing
+		Set st.values.arrayx(i).structure = struct
+	Else
+		Call AddStringToArray(st.keys, key)
+		Call AddStructToArray(st.values, struct)
+	End If
+End Sub
+
+
+Public Sub AddArrayToStruct(st, key, ar)
+	Dim i
+
+	If StructHasKey(st, key) Then
+		i = StructKeyIndex(st, key)
+		Set st.values.arrayx(i).arrayx = Nothing
+		Set st.values.arrayx(i).arrayx = ar
+	Else
+		Call AddStringToArray(st.keys, key)
+		Call AddArrayToArray(st.values, ar)
+	End If
+End Sub
+
+
+Public Sub AddNumberToStruct(st, key, ByVal n)
+	Dim i
+
+	If StructHasKey(st, key) Then
+		i = StructKeyIndex(st, key)
+		st.values.arrayx(i).number = n
+	Else
+		Call AddStringToArray(st.keys, key)
+		Call AddNumberToArray(st.values, n)
+	End If
+End Sub
+
+
+Public Sub AddBooleanToStruct(st, key, ByVal b)
+	Dim i
+
+	If StructHasKey(st, key) Then
+		i = StructKeyIndex(st, key)
+		st.values.arrayx(i).booleanx = b
+	Else
+		Call AddStringToArray(st.keys, key)
+		Call AddBooleanToArray(st.values, b)
+	End If
+End Sub
+
+
+Public Sub AddStringToStruct(st, key, value)
+	Dim i
+
+	If StructHasKey(st, key) Then
+		i = StructKeyIndex(st, key)
+		EraseArray st.values.arrayx(i).stringx 
+		Set st.values.arrayx(i).stringx = value
+	Else
+		Call AddStringToArray(st.keys, key)
+		Call AddStringToArray(st.values, value)
+	End If
+End Sub
+
+
+Public Sub AddDataToStruct(st, key, data)
+	Dim i
+
+	If StructHasKey(st, key) Then
+		i = StructKeyIndex(st, key)
+		Call FreeData(st.values.arrayx(i))
+		Set st.values.arrayx(i) = data
+	Else
+		Call AddStringToArray(st.keys, key)
+		Call AddDataToArray(st.values, data)
+	End If
+End Sub
+
+
+Public Sub FreeData(data)
+	Dim i
+	Dim st
+
+	If data.isStruture Then
+		Set st = data.structure
+		i = 0
+		While i < StructKeys(st)
+			Call FreeData(ArrayIndex(st.keys, i))
+			Call FreeData(ArrayIndex(st.values, i))
+			i = i + 1
+		WEnd
+		Set st = Nothing
+	ElseIf data.isArray Then
+		Call FreeArray(data.arrayx)
+	End If
+
+	Set data = Nothing
+End Sub
+
+
+Public Sub FreeArray(arrayx)
+	Dim i
+
+	i = 0
+	While i < ArrayLength(arrayx)
+		Call FreeData(arrayx.arrayx(i))
+		i = i + 1
+	WEnd
+
+	EraseArray arrayx.arrayx 
+	Set arrayx = Nothing
+End Sub
+
+
+Public Function DataTypeEquals(a, b)
+	Dim equal
+
+	equal = true
+	equal = equal And a.isStruture = b.isStruture
+	equal = equal And a.isArray = b.isArray
+	equal = equal And a.isNumber = b.isNumber
+	equal = equal And a.isBoolean = b.isBoolean
+	equal = equal And a.isString = b.isString
+
+	DataTypeEquals = equal
+End Function
+
+
+Public Function IsStructure(a)
+	Dim itis
+
+	itis = a.isStruture
+	If a.isArray Or a.isNumber Or a.isBoolean Or a.isString Then
+		itis = false
+	End If
+
+	IsStructure = itis
+End Function
+
+
+Public Function IsArray(a)
+	Dim itis
+
+	itis = a.isArray
+	If a.isStruture Or a.isNumber Or a.isBoolean Or a.isString Then
+		itis = false
+	End If
+
+	IsArray = itis
+End Function
+
+
+Public Function IsNumber(a)
+	Dim itis
+
+	itis = a.isNumber
+	If a.isStruture Or a.isArray Or a.isBoolean Or a.isString Then
+		itis = false
+	End If
+
+	IsNumber = itis
+End Function
+
+
+Public Function IsBoolean(a)
+	Dim itis
+
+	itis = a.isBoolean
+	If a.isStruture Or a.isArray Or a.isNumber Or a.isString Then
+		itis = false
+	End If
+
+	IsBoolean = itis
+End Function
+
+
+Public Function IsString(a)
+	Dim itis
+
+	itis = a.isString
+	If a.isStruture Or a.isArray Or a.isNumber Or a.isBoolean Then
+		itis = false
+	End If
+
+	IsString = itis
+End Function
+
+
+Public Function IsNoType(a)
+	Dim itis
+
+	If Not a.isString And Not a.isStruture And Not a.isArray And Not a.isNumber And Not a.isBoolean Then
+		itis = true
+	Else
+		itis = false
+	End If
+
+	IsNoType = itis
+End Function
+
+
+Public Function CreateArray()
+	Dim arrayx
+
+	Set arrayx = New Array
+	Set arrayx.arrayx = allocArray(10)
+	arrayx.length = 0
+
+	Set CreateArray = arrayx
+End Function
+
+
+Public Function CreateArrayWithInitialCapacity(ByVal capacity)
+	Dim arrayx
+
+	Set arrayx = New Array
+	Set arrayx.arrayx = allocArray(capacity)
+	arrayx.length = 0
+
+	Set CreateArrayWithInitialCapacity = arrayx
+End Function
+
+
+Public Sub ArrayAdd(arrayx, value)
+	If arrayx.length = arrayx.arrayx.Count Then
+		Call ArrayIncreaseSize(arrayx)
+	End If
+
+	Set arrayx.arrayx(arrayx.length) = value
+	arrayx.length = arrayx.length + 1
+End Sub
+
+
+Public Sub ArrayAddString(arrayx, value)
+	Dim data
+
+	Set data = CreateStringData(value)
+
+	Call ArrayAdd(arrayx, data)
+End Sub
+
+
+Public Sub ArrayAddBoolean(arrayx, ByVal value)
+	Dim data
+
+	Set data = CreateBooleanData(value)
+
+	Call ArrayAdd(arrayx, data)
+End Sub
+
+
+Public Sub ArrayAddNumber(arrayx, ByVal value)
+	Dim data
+
+	Set data = CreateNumberData(value)
+
+	Call ArrayAdd(arrayx, data)
+End Sub
+
+
+Public Sub ArrayAddStruct(arrayx, value)
+	Dim data
+
+	Set data = CreateStructData(value)
+
+	Call ArrayAdd(arrayx, data)
+End Sub
+
+
+Public Sub ArrayAddArray(arrayx, value)
+	Dim data
+
+	Set data = CreateArrayData(value)
+
+	Call ArrayAdd(arrayx, data)
+End Sub
+
+
+Public Sub ArrayIncreaseSize(arrayx)
+	Dim newLength, i
+	Dim newArray
+
+	newLength = Round(arrayx.arrayx.Count*3/2)
+	Set newArray = allocArray(newLength)
+
+	i = 0
+	While i < arrayx.arrayx.Count
+		Set newArray(i) = arrayx.arrayx(i)
+		i = i + 1
+	WEnd
+
+	EraseArray arrayx.arrayx 
+
+	Set arrayx.arrayx = newArray
+End Sub
+
+
+Public Function ArrayDecreaseSizeNecessary(arrayx)
+	Dim needsDecrease
+
+	needsDecrease = false
+
+	If arrayx.length > 10 Then
+		needsDecrease = arrayx.length <= Round(arrayx.arrayx.Count*2/3)
+	End If
+
+	ArrayDecreaseSizeNecessary = needsDecrease
+End Function
+
+
+Public Sub ArrayDecreaseSize(arrayx)
+	Dim newLength, i
+	Dim newArray
+
+	newLength = Round(arrayx.arrayx.Count*2/3)
+	Set newArray = allocArray(newLength)
+
+	i = 0
+	While i < newLength
+		Set newArray(i) = arrayx.arrayx(i)
+		i = i + 1
+	WEnd
+
+	EraseArray arrayx.arrayx 
+
+	Set arrayx.arrayx = newArray
+End Sub
+
+
+Public Function ArrayIndex(arrayx, ByVal index)
+	Set ArrayIndex = arrayx.arrayx(index)
+End Function
+
+
+Public Function ArrayIndexArray(arrayx, ByVal index)
+	Set ArrayIndexArray = arrayx.arrayx(index).arrayx
+End Function
+
+
+Public Function ArrayIndexStruct(arrayx, ByVal index)
+	Set ArrayIndexStruct = arrayx.arrayx(index).structure
+End Function
+
+
+Public Function ArrayIndexBoolean(arrayx, ByVal index)
+	ArrayIndexBoolean = arrayx.arrayx(index).booleanx
+End Function
+
+
+Public Function ArrayIndexString(arrayx, ByVal index)
+	Set ArrayIndexString = arrayx.arrayx(index).stringx
+End Function
+
+
+Public Function ArrayIndexNumber(arrayx, ByVal index)
+	ArrayIndexNumber = arrayx.arrayx(index).number
+End Function
+
+
+Public Function ArrayLength(arrayx)
+	ArrayLength = arrayx.length
+End Function
+
+
+Public Sub ArrayInsert(arrayx, ByVal index, value)
+	Dim i
+
+	If arrayx.length = arrayx.arrayx.Count Then
+		Call ArrayIncreaseSize(arrayx)
+	End If
+
+	i = arrayx.length
+	While i > index
+		Set arrayx.arrayx(i) = arrayx.arrayx(i - 1)
+		i = i - 1
+	WEnd
+
+	Set arrayx.arrayx(index) = value
+
+	arrayx.length = arrayx.length + 1
+End Sub
+
+
+Public Sub ArrayInsertString(arrayx, ByVal index, value)
+	Dim data
+
+	Set data = CreateStringData(value)
+
+	Call ArrayInsert(arrayx, index, data)
+End Sub
+
+
+Public Sub ArrayInsertBoolean(arrayx, ByVal index, ByVal value)
+	Dim data
+
+	Set data = CreateBooleanData(value)
+
+	Call ArrayInsert(arrayx, index, data)
+End Sub
+
+
+Public Sub ArrayInsertNumber(arrayx, ByVal index, ByVal value)
+	Dim data
+
+	Set data = CreateNumberData(value)
+
+	Call ArrayInsert(arrayx, index, data)
+End Sub
+
+
+Public Sub ArrayInsertStruct(arrayx, ByVal index, value)
+	Dim data
+
+	Set data = CreateStructData(value)
+
+	Call ArrayInsert(arrayx, index, data)
+End Sub
+
+
+Public Sub ArrayInsertArray(arrayx, ByVal index, value)
+	Dim data
+
+	Set data = CreateArrayData(value)
+
+	Call ArrayInsert(arrayx, index, data)
+End Sub
+
+
+Public Function ArraySet(arrayx, ByVal index, value)
+	Dim success
+
+	If index < arrayx.length Then
+		Set arrayx.arrayx(index) = value
+		success = true
+	Else
+		success = false
+	End If
+
+	ArraySet = success
+End Function
+
+
+Public Sub ArraySetString(arrayx, ByVal index, value)
+	Dim data
+
+	Set data = CreateStringData(value)
+
+	Call ArraySet(arrayx, index, data)
+End Sub
+
+
+Public Sub ArraySetBoolean(arrayx, ByVal index, ByVal value)
+	Dim data
+
+	Set data = CreateBooleanData(value)
+
+	Call ArraySet(arrayx, index, data)
+End Sub
+
+
+Public Sub ArraySetNumber(arrayx, ByVal index, ByVal value)
+	Dim data
+
+	Set data = CreateNumberData(value)
+
+	Call ArraySet(arrayx, index, data)
+End Sub
+
+
+Public Sub ArraySetStruct(arrayx, ByVal index, value)
+	Dim data
+
+	Set data = CreateStructData(value)
+
+	Call ArraySet(arrayx, index, data)
+End Sub
+
+
+Public Sub ArraySetArray(arrayx, ByVal index, value)
+	Dim data
+
+	Set data = CreateArrayData(value)
+
+	Call ArraySet(arrayx, index, data)
+End Sub
+
+
+Public Sub ArrayRemove(arrayx, ByVal index)
+	Dim i
+
+	i = index
+	While i < arrayx.length - 1
+		Set arrayx.arrayx(i) = arrayx.arrayx(i + 1)
+		i = i + 1
+	WEnd
+
+	arrayx.length = arrayx.length - 1
+
+	If ArrayDecreaseSizeNecessary(arrayx) Then
+		Call ArrayDecreaseSize(arrayx)
+	End If
+End Sub
+
+
+Public Function ToStaticArray(arc)
+	Dim arrayx
+	Dim i
+
+	Set arrayx = allocArray(arc.length)
+
+	i = 0
+	While i < arc.length
+		Set arrayx(i) = arc.arrayx(i)
+		i = i + 1
+	WEnd
+
+	Set ToStaticArray = arrayx
+End Function
+
+
+Public Function ToStaticNumberArray(arrayx)
+	Dim result
+	Dim i, n
+
+	n = ArrayLength(arrayx)
+
+	Set result = allocArray(n)
+
+	i = 0
+	While i < n
+		result(i) = ArrayIndex(arrayx, i).number
+		i = i + 1
+	WEnd
+
+	Set ToStaticNumberArray = result
+End Function
+
+
+Public Function ToStaticBooleanArray(arrayx)
+	Dim result
+	Dim i, n
+
+	n = ArrayLength(arrayx)
+
+	Set result = allocArray(n)
+
+	i = 0
+	While i < n
+		result(i) = ArrayIndex(arrayx, i).booleanx
+		i = i + 1
+	WEnd
+
+	Set ToStaticBooleanArray = result
+End Function
+
+
+Public Function ToStaticStringArray(arrayx)
+	Dim result
+	Dim i, n
+
+	n = ArrayLength(arrayx)
+
+	Set result = allocArray(n)
+
+	i = 0
+	While i < n
+		Set result(i) = New StringReference
+		Set result(i).stringx = ArrayIndex(arrayx, i).stringx
+		i = i + 1
+	WEnd
+
+	Set ToStaticStringArray = result
+End Function
+
+
+Public Function ToStaticArrayArray(arrayx)
+	Dim result
+	Dim i, n
+
+	n = ArrayLength(arrayx)
+
+	Set result = allocArray(n)
+
+	i = 0
+	While i < n
+		Set result(i) = ArrayIndex(arrayx, i).arrayx
+		i = i + 1
+	WEnd
+
+	Set ToStaticArrayArray = result
+End Function
+
+
+Public Function ToStaticStructArray(arrayx)
+	Dim result
+	Dim i, n
+
+	n = ArrayLength(arrayx)
+
+	Set result = allocArray(n)
+
+	i = 0
+	While i < n
+		Set result(i) = ArrayIndex(arrayx, i).structure
+		i = i + 1
+	WEnd
+
+	Set ToStaticStructArray = result
+End Function
+
+
+Public Function StaticArrayToArrayWithOptimalSize(src)
+	Dim dst
+	Dim i
+	Dim c, n, newCapacity
+
+	'
+	'         c = 10*(3/2)^n
+	'         log(c) = log(10*(3/2)^n)
+	'         log(c) = log(10) + log((3/2)^n)
+	'         log(c) = 1 + log((3/2)^n)
+	'         log(c) - 1 = log((3/2)^n)
+	'         log(c) - 1 = n*log(3/2)
+	'         n = (log(c) - 1)/log(3/2)
+	'        
+
+	c = src.Count
+	n = (Log(c) - 1)/Log(3/2)
+
+	newCapacity = Ceiling(10*Pow(3/2, Ceiling(n)))
+
+	Set dst = CreateArrayWithInitialCapacity(newCapacity)
+
+	i = 0
+	While i < src.Count
+		Set dst.arrayx(i) = src(i)
+		i = i + 1
+	WEnd
+
+	Set StaticArrayToArrayWithOptimalSize = dst
+End Function
+
+
+Public Function StaticArrayToArray(src)
+	Dim i
+	Dim dst
+
+	Set dst = CreateArrayWithInitialCapacity(src.Count)
+	i = 0
+	While i < src.Count
+		Set dst.arrayx(i) = src(i)
+		i = i + 1
+	WEnd
+	dst.length = src.Count
+
+	Set StaticArrayToArray = dst
+End Function
+
+
+Public Function AddNumber(list, ByVal a)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count + 1)
+	i = 0
+	While i < list.Count
+		newlist(i) = list(i)
+		i = i + 1
+	WEnd
+	newlist(list.Count) = a
+		
+	EraseArray list 
+		
+	Set AddNumber = newlist
+End Function
+
+
+Public Sub AddNumberRef(list, ByVal i)
+	Set list.numberArray = AddNumber(list.numberArray, i)
+End Sub
+
+
+Public Function RemoveNumber(list, ByVal n)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count - 1)
+
+	If n >= 0 And n < list.Count Then
+		i = 0
+		While i < list.Count
+			If i < n Then
+				newlist(i) = list(i)
+			End If
+			If i > n Then
+				newlist(i - 1) = list(i)
+			End If
+			i = i + 1
+		WEnd
+
+		EraseArray list 
+	Else
+		EraseArray newlist 
+	End If
+		
+	Set RemoveNumber = newlist
+End Function
+
+
+Public Function GetNumberRef(list, ByVal i)
+	GetNumberRef = list.numberArray(i)
+End Function
+
+
+Public Sub RemoveNumberRef(list, ByVal i)
+	Set list.numberArray = RemoveNumber(list.numberArray, i)
+End Sub
+
+
+Public Function AddString(list, a)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count + 1)
+
+	i = 0
+	While i < list.Count
+		Set newlist(i) = list(i)
+		i = i + 1
+	WEnd
+	Set newlist(list.Count) = a
+		
+	EraseArray list 
+		
+	Set AddString = newlist
+End Function
+
+
+Public Sub AddStringRef(list, i)
+	Set list.stringArray = AddString(list.stringArray, i)
+End Sub
+
+
+Public Function RemoveString(list, ByVal n)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count - 1)
+
+	If n >= 0 And n < list.Count Then
+		i = 0
+		While i < list.Count
+			If i < n Then
+				Set newlist(i) = list(i)
+			End If
+			If i > n Then
+				Set newlist(i - 1) = list(i)
+			End If
+			i = i + 1
+		WEnd
+
+		EraseArray list 
+	Else
+		EraseArray newlist 
+	End If
+		
+	Set RemoveString = newlist
+End Function
+
+
+Public Function GetStringRef(list, ByVal i)
+	Set GetStringRef = list.stringArray(i)
+End Function
+
+
+Public Sub RemoveStringRef(list, ByVal i)
+	Set list.stringArray = RemoveString(list.stringArray, i)
+End Sub
+
+
+Public Function CreateDynamicArrayCharacters()
+	Dim da
+
+	Set da = New DynamicArrayCharacters
+	Set da.arrayx = allocArray(10)
+	da.length = 0
+
+	Set CreateDynamicArrayCharacters = da
+End Function
+
+
+Public Function CreateDynamicArrayCharactersWithInitialCapacity(ByVal capacity)
+	Dim da
+
+	Set da = New DynamicArrayCharacters
+	Set da.arrayx = allocArray(capacity)
+	da.length = 0
+
+	Set CreateDynamicArrayCharactersWithInitialCapacity = da
+End Function
+
+
+Public Sub DynamicArrayAddCharacter(da, ByVal value)
+	If da.length = da.arrayx.Count Then
+		Call DynamicArrayCharactersIncreaseSize(da)
+	End If
+
+	da.arrayx(da.length) = value
+	da.length = da.length + 1
+End Sub
+
+
+Public Sub DynamicArrayAddString(da, str)
+	Dim i
+
+	i = 0
+	While i < str.Count
+		Call DynamicArrayAddCharacter(da, str(i))
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Sub DynamicArrayCharactersIncreaseSize(da)
+	Dim newLength, i
+	Dim newArray
+
+	newLength = Round(da.arrayx.Count*3/2)
+	Set newArray = allocArray(newLength)
+
+	i = 0
+	While i < da.arrayx.Count
+		newArray(i) = da.arrayx(i)
+		i = i + 1
+	WEnd
+
+	EraseArray da.arrayx 
+
+	Set da.arrayx = newArray
+End Sub
+
+
+Public Function DynamicArrayCharactersDecreaseSizeNecessary(da)
+	Dim needsDecrease
+
+	needsDecrease = false
+
+	If da.length > 10 Then
+		needsDecrease = da.length <= Round(da.arrayx.Count*2/3)
+	End If
+
+	DynamicArrayCharactersDecreaseSizeNecessary = needsDecrease
+End Function
+
+
+Public Sub DynamicArrayCharactersDecreaseSize(da)
+	Dim newLength, i
+	Dim newArray
+
+	newLength = Round(da.arrayx.Count*2/3)
+	Set newArray = allocArray(newLength)
+
+	i = 0
+	While i < newLength
+		newArray(i) = da.arrayx(i)
+		i = i + 1
+	WEnd
+
+	EraseArray da.arrayx 
+
+	Set da.arrayx = newArray
+End Sub
+
+
+Public Function DynamicArrayCharactersIndex(da, ByVal index)
+	DynamicArrayCharactersIndex = da.arrayx(index)
+End Function
+
+
+Public Function DynamicArrayCharactersLength(da)
+	DynamicArrayCharactersLength = da.length
+End Function
+
+
+Public Sub DynamicArrayInsertCharacter(da, ByVal index, ByVal value)
+	Dim i
+
+	If da.length = da.arrayx.Count Then
+		Call DynamicArrayCharactersIncreaseSize(da)
+	End If
+
+	i = da.length
+	While i > index
+		da.arrayx(i) = da.arrayx(i - 1)
+		i = i - 1
+	WEnd
+
+	da.arrayx(index) = value
+
+	da.length = da.length + 1
+End Sub
+
+
+Public Function DynamicArrayCharacterSet(da, ByVal index, ByVal value)
+	Dim success
+
+	If index < da.length Then
+		da.arrayx(index) = value
+		success = true
+	Else
+		success = false
+	End If
+
+	DynamicArrayCharacterSet = success
+End Function
+
+
+Public Sub DynamicArrayRemoveCharacter(da, ByVal index)
+	Dim i
+
+	i = index
+	While i < da.length - 1
+		da.arrayx(i) = da.arrayx(i + 1)
+		i = i + 1
+	WEnd
+
+	da.length = da.length - 1
+
+	If DynamicArrayCharactersDecreaseSizeNecessary(da) Then
+		Call DynamicArrayCharactersDecreaseSize(da)
+	End If
+End Sub
+
+
+Public Sub FreeDynamicArrayCharacters(da)
+	EraseArray da.arrayx 
+	Set da = Nothing
+End Sub
+
+
+Public Function DynamicArrayCharactersToArray(da)
+	Dim arrayx
+	Dim i
+
+	Set arrayx = allocArray(da.length)
+
+	i = 0
+	While i < da.length
+		arrayx(i) = da.arrayx(i)
+		i = i + 1
+	WEnd
+
+	Set DynamicArrayCharactersToArray = arrayx
+End Function
+
+
+Public Function ArrayToDynamicArrayCharactersWithOptimalSize(arrayx)
+	Dim da
+	Dim i
+	Dim c, n, newCapacity
+
+	c = arrayx.Count
+	n = (Log(c) - 1)/Log(3/2)
+	newCapacity = Ceiling(10*Pow(3/2, n))
+
+	Set da = CreateDynamicArrayCharactersWithInitialCapacity(newCapacity)
+
+	i = 0
+	While i < arrayx.Count
+		da.arrayx(i) = arrayx(i)
+		i = i + 1
+	WEnd
+
+	Set ArrayToDynamicArrayCharactersWithOptimalSize = da
+End Function
+
+
+Public Function ArrayToDynamicArrayCharacters(arrayx)
+	Dim da
+
+	Set da = New DynamicArrayCharacters
+	Set da.arrayx = CopyString(arrayx)
+	da.length = arrayx.Count
+
+	Set ArrayToDynamicArrayCharacters = da
+End Function
+
+
+Public Function DynamicArrayCharactersEqual(a, b)
+	Dim equal
+	Dim i
+
+	equal = true
+	If a.length = b.length Then
+		i = 0
+		While i < a.length And equal
+			If a.arrayx(i) <> b.arrayx(i) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	DynamicArrayCharactersEqual = equal
+End Function
+
+
+Public Function DynamicArrayCharactersToLinkedList(da)
+	Dim ll
+	Dim i
+
+	Set ll = CreateLinkedListCharacter()
+
+	i = 0
+	While i < da.length
+		Call LinkedListAddCharacter(ll, da.arrayx(i))
+		i = i + 1
+	WEnd
+
+	Set DynamicArrayCharactersToLinkedList = ll
+End Function
+
+
+Public Function LinkedListToDynamicArrayCharacters(ll)
+	Dim da
+	Dim i
+	Dim node
+
+	Set node = ll.first
+
+	Set da = New DynamicArrayCharacters
+	da.length = LinkedListCharactersLength(ll)
+
+	Set da.arrayx = allocArray(da.length)
+
+	i = 0
+	While i < da.length
+		da.arrayx(i) = node.value
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	Set LinkedListToDynamicArrayCharacters = da
+End Function
+
+
+Public Function AddBoolean(list, ByVal a)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count + 1)
+	i = 0
+	While i < list.Count
+		newlist(i) = list(i)
+		i = i + 1
+	WEnd
+	newlist(list.Count) = a
+		
+	EraseArray list 
+		
+	Set AddBoolean = newlist
+End Function
+
+
+Public Sub AddBooleanRef(list, ByVal i)
+	Set list.booleanArray = AddBoolean(list.booleanArray, i)
+End Sub
+
+
+Public Function RemoveBoolean(list, ByVal n)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count - 1)
+
+	If n >= 0 And n < list.Count Then
+		i = 0
+		While i < list.Count
+			If i < n Then
+				newlist(i) = list(i)
+			End If
+			If i > n Then
+				newlist(i - 1) = list(i)
+			End If
+			i = i + 1
+		WEnd
+
+		EraseArray list 
+	Else
+		EraseArray newlist 
+	End If
+		
+	Set RemoveBoolean = newlist
+End Function
+
+
+Public Function GetBooleanRef(list, ByVal i)
+	GetBooleanRef = list.booleanArray(i)
+End Function
+
+
+Public Sub RemoveDecimalRef(list, ByVal i)
+	Set list.booleanArray = RemoveBoolean(list.booleanArray, i)
+End Sub
+
+
+Public Function CreateLinkedListString()
+	Dim ll
+
+	Set ll = New LinkedListStrings
+	Set ll.first = New LinkedListNodeStrings
+	Set ll.last = ll.first
+	ll.last.endx = true
+
+	Set CreateLinkedListString = ll
+End Function
+
+
+Public Sub LinkedListAddString(ll, value)
+	ll.last.endx = false
+	Set ll.last.value = value
+	Set ll.last.nextx = New LinkedListNodeStrings
+	ll.last.nextx.endx = true
+	Set ll.last = ll.last.nextx
+End Sub
+
+
+Public Function LinkedListStringsToArray(ll)
+	Dim arrayx
+	Dim length, i
+	Dim node
+
+	Set node = ll.first
+
+	length = LinkedListStringsLength(ll)
+
+	Set arrayx = allocArray(length)
+
+	i = 0
+	While i < length
+		Set arrayx(i) = New StringReference
+		Set arrayx(i).stringx = node.value
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	Set LinkedListStringsToArray = arrayx
+End Function
+
+
+Public Function LinkedListStringsLength(ll)
+	Dim l
+	Dim node
+
+	l = 0
+	Set node = ll.first
+	
+	While Not node.endx
+		Set node = node.nextx
+		l = l + 1
+	WEnd
+
+	LinkedListStringsLength = l
+End Function
+
+
+Public Sub FreeLinkedListString(ll)
+	Dim node, prev
+
+	Set node = ll.first
+
+	
+	While Not node.endx
+		Set prev = node
+		Set node = node.nextx
+		Set prev = Nothing
+	WEnd
+
+	Set node = Nothing
+End Sub
+
+
+Public Sub LinkedListInsertString(ll, ByVal index, value)
+	Dim i
+	Dim node, tmp
+
+	If index = 0 Then
+		Set tmp = ll.first
+		Set ll.first = New LinkedListNodeStrings
+		Set ll.first.nextx = tmp
+		Set ll.first.value = value
+		ll.first.endx = false
+	Else
+		Set node = ll.first
+		i = 0
+		While i < index - 1
+			Set node = node.nextx
+			i = i + 1
+		WEnd
+
+		Set tmp = node.nextx
+		Set node.nextx = New LinkedListNodeStrings
+		Set node.nextx.nextx = tmp
+		Set node.nextx.value = value
+		node.nextx.endx = false
+	End If
+End Sub
+
+
+Public Function CreateLinkedListNumbers()
+	Dim ll
+
+	Set ll = New LinkedListNumbers
+	Set ll.first = New LinkedListNodeNumbers
+	Set ll.last = ll.first
+	ll.last.endx = true
+
+	Set CreateLinkedListNumbers = ll
+End Function
+
+
+Public Function CreateLinkedListNumbersArray(ByVal length)
+	Dim lls
+	Dim i
+
+	Set lls = allocArray(length)
+	i = 0
+	While i < lls.Count
+		Set lls(i) = CreateLinkedListNumbers()
+		i = i + 1
+	WEnd
+
+	Set CreateLinkedListNumbersArray = lls
+End Function
+
+
+Public Sub LinkedListAddNumber(ll, ByVal value)
+	ll.last.endx = false
+	ll.last.value = value
+	Set ll.last.nextx = New LinkedListNodeNumbers
+	ll.last.nextx.endx = true
+	Set ll.last = ll.last.nextx
+End Sub
+
+
+Public Function LinkedListNumbersLength(ll)
+	Dim l
+	Dim node
+
+	l = 0
+	Set node = ll.first
+	
+	While Not node.endx
+		Set node = node.nextx
+		l = l + 1
+	WEnd
+
+	LinkedListNumbersLength = l
+End Function
+
+
+Public Function LinkedListNumbersIndex(ll, ByVal index)
+	Dim i
+	Dim node
+
+	Set node = ll.first
+	i = 0
+	While i < index
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	LinkedListNumbersIndex = node.value
+End Function
+
+
+Public Sub LinkedListInsertNumber(ll, ByVal index, ByVal value)
+	Dim i
+	Dim node, tmp
+
+	If index = 0 Then
+		Set tmp = ll.first
+		Set ll.first = New LinkedListNodeNumbers
+		Set ll.first.nextx = tmp
+		ll.first.value = value
+		ll.first.endx = false
+	Else
+		Set node = ll.first
+		i = 0
+		While i < index - 1
+			Set node = node.nextx
+			i = i + 1
+		WEnd
+
+		Set tmp = node.nextx
+		Set node.nextx = New LinkedListNodeNumbers
+		Set node.nextx.nextx = tmp
+		node.nextx.value = value
+		node.nextx.endx = false
+	End If
+End Sub
+
+
+Public Sub LinkedListSet(ll, ByVal index, ByVal value)
+	Dim i
+	Dim node
+
+	Set node = ll.first
+	i = 0
+	While i < index
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	node.nextx.value = value
+End Sub
+
+
+Public Sub LinkedListRemoveNumber(ll, ByVal index)
+	Dim i
+	Dim node, prev
+
+	Set node = ll.first
+	Set prev = ll.first
+
+	i = 0
+	While i < index
+		Set prev = node
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	If index = 0 Then
+		Set ll.first = prev.nextx
+	End If
+	If Not prev.nextx.endx Then
+		Set prev.nextx = prev.nextx.nextx
+	End If
+End Sub
+
+
+Public Sub FreeLinkedListNumbers(ll)
+	Dim node, prev
+
+	Set node = ll.first
+
+	
+	While Not node.endx
+		Set prev = node
+		Set node = node.nextx
+		Set prev = Nothing
+	WEnd
+
+	Set node = Nothing
+End Sub
+
+
+Public Sub FreeLinkedListNumbersArray(lls)
+	Dim i
+
+	i = 0
+	While i < lls.Count
+		Call FreeLinkedListNumbers(lls(i))
+		i = i + 1
+	WEnd
+	EraseArray lls 
+End Sub
+
+
+Public Function LinkedListNumbersToArray(ll)
+	Dim arrayx
+	Dim length, i
+	Dim node
+
+	Set node = ll.first
+
+	length = LinkedListNumbersLength(ll)
+
+	Set arrayx = allocArray(length)
+
+	i = 0
+	While i < length
+		arrayx(i) = node.value
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	Set LinkedListNumbersToArray = arrayx
+End Function
+
+
+Public Function ArrayToLinkedListNumbers(arrayx)
+	Dim ll
+	Dim i
+
+	Set ll = CreateLinkedListNumbers()
+
+	i = 0
+	While i < arrayx.Count
+		Call LinkedListAddNumber(ll, arrayx(i))
+		i = i + 1
+	WEnd
+
+	Set ArrayToLinkedListNumbers = ll
+End Function
+
+
+Public Function LinkedListNumbersEqual(a, b)
+	Dim equal, done
+	Dim an, bn
+
+	Set an = a.first
+	Set bn = b.first
+
+	equal = true
+	done = false
+	
+	While equal And Not done
+		If an.endx = bn.endx Then
+			If an.endx Then
+				done = true
+			ElseIf an.value = bn.value Then
+				Set an = an.nextx
+				Set bn = bn.nextx
+			Else
+				equal = false
+			End If
+		Else
+			equal = false
+		End If
+	WEnd
+
+	LinkedListNumbersEqual = equal
+End Function
+
+
+Public Function CreateLinkedListCharacter()
+	Dim ll
+
+	Set ll = New LinkedListCharacters
+	Set ll.first = New LinkedListNodeCharacters
+	Set ll.last = ll.first
+	ll.last.endx = true
+
+	Set CreateLinkedListCharacter = ll
+End Function
+
+
+Public Sub LinkedListAddCharacter(ll, ByVal value)
+	ll.last.endx = false
+	ll.last.value = value
+	Set ll.last.nextx = New LinkedListNodeCharacters
+	ll.last.nextx.endx = true
+	Set ll.last = ll.last.nextx
+End Sub
+
+
+Public Function LinkedListCharactersToArray(ll)
+	Dim arrayx
+	Dim length, i
+	Dim node
+
+	Set node = ll.first
+
+	length = LinkedListCharactersLength(ll)
+
+	Set arrayx = allocArray(length)
+
+	i = 0
+	While i < length
+		arrayx(i) = node.value
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	Set LinkedListCharactersToArray = arrayx
+End Function
+
+
+Public Function LinkedListCharactersLength(ll)
+	Dim l
+	Dim node
+
+	l = 0
+	Set node = ll.first
+	
+	While Not node.endx
+		Set node = node.nextx
+		l = l + 1
+	WEnd
+
+	LinkedListCharactersLength = l
+End Function
+
+
+Public Sub FreeLinkedListCharacter(ll)
+	Dim node, prev
+
+	Set node = ll.first
+
+	
+	While Not node.endx
+		Set prev = node
+		Set node = node.nextx
+		Set prev = Nothing
+	WEnd
+
+	Set node = Nothing
+End Sub
+
+
+Public Sub LinkedListCharactersAddString(ll, str)
+	Dim i
+
+	i = 0
+	While i < str.Count
+		Call LinkedListAddCharacter(ll, str(i))
+		i = i + 1
+	WEnd
+End Sub
+
+
+Public Sub LinkedListInsertCharacter(ll, ByVal index, ByVal value)
+	Dim i
+	Dim node, tmp
+
+	If index = 0 Then
+		Set tmp = ll.first
+		Set ll.first = New LinkedListNodeCharacters
+		Set ll.first.nextx = tmp
+		ll.first.value = value
+		ll.first.endx = false
+	Else
+		Set node = ll.first
+		i = 0
+		While i < index - 1
+			Set node = node.nextx
+			i = i + 1
+		WEnd
+
+		Set tmp = node.nextx
+		Set node.nextx = New LinkedListNodeCharacters
+		Set node.nextx.nextx = tmp
+		node.nextx.value = value
+		node.nextx.endx = false
+	End If
+End Sub
+
+
+Public Function CreateDynamicArrayNumbers()
+	Dim da
+
+	Set da = New DynamicArrayNumbers
+	Set da.arrayx = allocArray(10)
+	da.length = 0
+
+	Set CreateDynamicArrayNumbers = da
+End Function
+
+
+Public Function CreateDynamicArrayNumbersWithInitialCapacity(ByVal capacity)
+	Dim da
+
+	Set da = New DynamicArrayNumbers
+	Set da.arrayx = allocArray(capacity)
+	da.length = 0
+
+	Set CreateDynamicArrayNumbersWithInitialCapacity = da
+End Function
+
+
+Public Sub DynamicArrayAddNumber(da, ByVal value)
+	If da.length = da.arrayx.Count Then
+		Call DynamicArrayNumbersIncreaseSize(da)
+	End If
+
+	da.arrayx(da.length) = value
+	da.length = da.length + 1
+End Sub
+
+
+Public Sub DynamicArrayNumbersIncreaseSize(da)
+	Dim newLength, i
+	Dim newArray
+
+	newLength = Round(da.arrayx.Count*3/2)
+	Set newArray = allocArray(newLength)
+
+	i = 0
+	While i < da.arrayx.Count
+		newArray(i) = da.arrayx(i)
+		i = i + 1
+	WEnd
+
+	EraseArray da.arrayx 
+
+	Set da.arrayx = newArray
+End Sub
+
+
+Public Function DynamicArrayNumbersDecreaseSizeNecessary(da)
+	Dim needsDecrease
+
+	needsDecrease = false
+
+	If da.length > 10 Then
+		needsDecrease = da.length <= Round(da.arrayx.Count*2/3)
+	End If
+
+	DynamicArrayNumbersDecreaseSizeNecessary = needsDecrease
+End Function
+
+
+Public Sub DynamicArrayNumbersDecreaseSize(da)
+	Dim newLength, i
+	Dim newArray
+
+	newLength = Round(da.arrayx.Count*2/3)
+	Set newArray = allocArray(newLength)
+
+	i = 0
+	While i < newLength
+		newArray(i) = da.arrayx(i)
+		i = i + 1
+	WEnd
+
+	EraseArray da.arrayx 
+
+	Set da.arrayx = newArray
+End Sub
+
+
+Public Function DynamicArrayNumbersIndex(da, ByVal index)
+	DynamicArrayNumbersIndex = da.arrayx(index)
+End Function
+
+
+Public Function DynamicArrayNumbersLength(da)
+	DynamicArrayNumbersLength = da.length
+End Function
+
+
+Public Sub DynamicArrayInsertNumber(da, ByVal index, ByVal value)
+	Dim i
+
+	If da.length = da.arrayx.Count Then
+		Call DynamicArrayNumbersIncreaseSize(da)
+	End If
+
+	i = da.length
+	While i > index
+		da.arrayx(i) = da.arrayx(i - 1)
+		i = i - 1
+	WEnd
+
+	da.arrayx(index) = value
+
+	da.length = da.length + 1
+End Sub
+
+
+Public Function DynamicArrayNumberSet(da, ByVal index, ByVal value)
+	Dim success
+
+	If index < da.length Then
+		da.arrayx(index) = value
+		success = true
+	Else
+		success = false
+	End If
+
+	DynamicArrayNumberSet = success
+End Function
+
+
+Public Sub DynamicArrayRemoveNumber(da, ByVal index)
+	Dim i
+
+	i = index
+	While i < da.length - 1
+		da.arrayx(i) = da.arrayx(i + 1)
+		i = i + 1
+	WEnd
+
+	da.length = da.length - 1
+
+	If DynamicArrayNumbersDecreaseSizeNecessary(da) Then
+		Call DynamicArrayNumbersDecreaseSize(da)
+	End If
+End Sub
+
+
+Public Sub FreeDynamicArrayNumbers(da)
+	EraseArray da.arrayx 
+	Set da = Nothing
+End Sub
+
+
+Public Function DynamicArrayNumbersToArray(da)
+	Dim arrayx
+	Dim i
+
+	Set arrayx = allocArray(da.length)
+
+	i = 0
+	While i < da.length
+		arrayx(i) = da.arrayx(i)
+		i = i + 1
+	WEnd
+
+	Set DynamicArrayNumbersToArray = arrayx
+End Function
+
+
+Public Function ArrayToDynamicArrayNumbersWithOptimalSize(arrayx)
+	Dim da
+	Dim i
+	Dim c, n, newCapacity
+
+	'
+	'         c = 10*(3/2)^n
+	'         log(c) = log(10*(3/2)^n)
+	'         log(c) = log(10) + log((3/2)^n)
+	'         log(c) = 1 + log((3/2)^n)
+	'         log(c) - 1 = log((3/2)^n)
+	'         log(c) - 1 = n*log(3/2)
+	'         n = (log(c) - 1)/log(3/2)
+	'        
+	c = arrayx.Count
+	n = (Log(c) - 1)/Log(3/2)
+	newCapacity = Ceiling(10*Pow(3/2, n))
+
+	Set da = CreateDynamicArrayNumbersWithInitialCapacity(newCapacity)
+
+	i = 0
+	While i < arrayx.Count
+		da.arrayx(i) = arrayx(i)
+		i = i + 1
+	WEnd
+
+	Set ArrayToDynamicArrayNumbersWithOptimalSize = da
+End Function
+
+
+Public Function ArrayToDynamicArrayNumbers(arrayx)
+	Dim da
+
+	Set da = New DynamicArrayNumbers
+	Set da.arrayx = CopyNumberArray(arrayx)
+	da.length = arrayx.Count
+
+	Set ArrayToDynamicArrayNumbers = da
+End Function
+
+
+Public Function DynamicArrayNumbersEqual(a, b)
+	Dim equal
+	Dim i
+
+	equal = true
+	If a.length = b.length Then
+		i = 0
+		While i < a.length And equal
+			If a.arrayx(i) <> b.arrayx(i) Then
+				equal = false
+			End If
+			i = i + 1
+		WEnd
+	Else
+		equal = false
+	End If
+
+	DynamicArrayNumbersEqual = equal
+End Function
+
+
+Public Function DynamicArrayNumbersToLinkedList(da)
+	Dim ll
+	Dim i
+
+	Set ll = CreateLinkedListNumbers()
+
+	i = 0
+	While i < da.length
+		Call LinkedListAddNumber(ll, da.arrayx(i))
+		i = i + 1
+	WEnd
+
+	Set DynamicArrayNumbersToLinkedList = ll
+End Function
+
+
+Public Function LinkedListToDynamicArrayNumbers(ll)
+	Dim da
+	Dim i
+	Dim node
+
+	Set node = ll.first
+
+	Set da = New DynamicArrayNumbers
+	da.length = LinkedListNumbersLength(ll)
+
+	Set da.arrayx = allocArray(da.length)
+
+	i = 0
+	While i < da.length
+		da.arrayx(i) = node.value
+		Set node = node.nextx
+		i = i + 1
+	WEnd
+
+	Set LinkedListToDynamicArrayNumbers = da
+End Function
+
+
+Public Function DynamicArrayNumbersIndexOf(arr, ByVal n, foundReference)
+	Dim found
+	Dim i
+
+	found = false
+	i = 0
+	While i < arr.length And Not found
+		If arr.arrayx(i) = n Then
+			found = true
+		End If
+		i = i + 1
+	WEnd
+	If Not found Then
+		i = -1
+	Else
+		i = i - 1
+	End If
+
+	foundReference.booleanValue = found
+
+	DynamicArrayNumbersIndexOf = i
+End Function
+
+
+Public Function DynamicArrayNumbersIsInArray(arr, ByVal n)
+	Dim found
+	Dim i
+
+	found = false
+	i = 0
+	While i < arr.length And Not found
+		If arr.arrayx(i) = n Then
+			found = true
+		End If
+		i = i + 1
+	WEnd
+
+	DynamicArrayNumbersIsInArray = found
+End Function
+
+
+Public Function AddCharacter(list, ByVal a)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count + 1)
+	i = 0
+	While i < list.Count
+		newlist(i) = list(i)
+		i = i + 1
+	WEnd
+	newlist(list.Count) = a
+		
+	EraseArray list 
+		
+	Set AddCharacter = newlist
+End Function
+
+
+Public Sub AddCharacterRef(list, ByVal i)
+	Set list.stringx = AddCharacter(list.stringx, i)
+End Sub
+
+
+Public Function RemoveCharacter(list, ByVal n)
+	Dim newlist
+	Dim i
+
+	Set newlist = allocArray(list.Count - 1)
+
+	If n >= 0 And n < list.Count Then
+		i = 0
+		While i < list.Count
+			If i < n Then
+				newlist(i) = list(i)
+			End If
+			If i > n Then
+				newlist(i - 1) = list(i)
+			End If
+			i = i + 1
+		WEnd
+
+		EraseArray list 
+	Else
+		EraseArray newlist 
+	End If
+
+	Set RemoveCharacter = newlist
+End Function
+
+
+Public Function GetCharacterRef(list, ByVal i)
+	GetCharacterRef = list.stringx(i)
+End Function
+
+
+Public Sub RemoveCharacterRef(list, ByVal i)
+	Set list.stringx = RemoveCharacter(list.stringx, i)
+End Sub
+
+
+Public Sub AssertFalse(ByVal b, failures)
+	If b Then
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertTrue(ByVal b, failures)
+	If Not b Then
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertEquals(ByVal a, ByVal b, failures)
+	If a <> b Then
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertBooleansEqual(ByVal a, ByVal b, failures)
+	If a <> b Then
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertCharactersEqual(ByVal a, ByVal b, failures)
+	If a <> b Then
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertStringEquals(a, b, failures)
+	If Not StringsEqual(a, b) Then
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertNumberArraysEqual(a, b, failures)
+	Dim i
+
+	If a.Count = b.Count Then
+		i = 0
+		While i < a.Count
+			Call AssertEquals(a(i), b(i), failures)
+			i = i + 1
+		WEnd
+	Else
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertBooleanArraysEqual(a, b, failures)
+	Dim i
+
+	If a.Count = b.Count Then
+		i = 0
+		While i < a.Count
+			Call AssertBooleansEqual(a(i), b(i), failures)
+			i = i + 1
+		WEnd
+	Else
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+
+Public Sub AssertStringArraysEqual(a, b, failures)
+	Dim i
+
+	If a.Count = b.Count Then
+		i = 0
+		While i < a.Count
+			Call AssertStringEquals(a(i).stringx, b(i).stringx, failures)
+			i = i + 1
+		WEnd
+	Else
+		failures.numberValue = failures.numberValue + 1
+	End If
+End Sub
+
+

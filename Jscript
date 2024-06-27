@@ -1,0 +1,53 @@
+function objectToJson(obj) {
+    // Helper function to escape special characters in strings
+    function escapeString(str) {
+        return str.replace(/\\/g, '\\\\')
+                  .replace(/"/g, '\\"')
+                  .replace(/\n/g, '\\n')
+                  .replace(/\r/g, '\\r')
+                  .replace(/\t/g, '\\t');
+    }
+
+    // Helper function to serialize a value
+    function serialize(value) {
+        if (typeof value === 'string') {
+            return '"' + escapeString(value) + '"';
+        } else if (typeof value === 'number' || typeof value === 'boolean') {
+            return String(value);
+        } else if (Array.isArray(value)) {
+            return '[' + value.map(serialize).join(',') + ']';
+        } else if (typeof value === 'object' && value !== null) {
+            return objectToJson(value);
+        } else {
+            return 'null';
+        }
+    }
+
+    // Initialize an empty array to hold key-value pairs
+    let entries = [];
+
+    // Iterate over the object's properties
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            // Serialize the key and value, then add to entries
+            let serializedKey = '"' + escapeString(key) + '"';
+            let serializedValue = serialize(obj[key]);
+            entries.push(serializedKey + ':' + serializedValue);
+        }
+    }
+
+    // Combine entries into a JSON string
+    return '{' + entries.join(',') + '}';
+}
+
+// Example usage
+let exampleObject = {
+    name: "John",
+    age: 30,
+    city: "New York",
+    isStudent: false,
+    subjects: ["Math", "Science"]
+};
+
+let jsonString = objectToJson(exampleObject);
+console.log(jsonString); // Output: {"name":"John","age":30,"city":"New York","isStudent":false,"subjects":["Math","Science"]}

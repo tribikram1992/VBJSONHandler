@@ -1,0 +1,28 @@
+Option Explicit
+
+Dim objIE, strName, strResult
+
+' Create Internet Explorer object
+Set objIE = CreateObject("InternetExplorer.Application")
+
+' Make IE visible (for testing purposes)
+objIE.Visible = True
+
+' Navigate to the HTML page containing JavaScript functions
+objIE.Navigate "file:///C:/path/to/your/example.html" ' Replace with actual file path
+
+' Wait for IE to finish loading the page
+Do While objIE.Busy Or objIE.ReadyState <> 4
+    WScript.Sleep 100 ' Wait 0.1 second
+Loop
+
+' Execute JavaScript function 'greet' and retrieve the result
+strName = "John" ' Example input
+strResult = objIE.Document.parentWindow.greet(strName)
+
+' Display the result
+MsgBox "Result of greet function: " & strResult
+
+' Clean up
+objIE.Quit
+Set objIE = Nothing

@@ -1,0 +1,28 @@
+Function serialize(value)
+  Dim serializedArray, serializedObject, key, i
+  If IsNull(value) Then
+    serialize = "Empty"
+  ElseIf VarType(value) = vbString Then
+    serialize = """" & escapeString(value) & """"
+  ElseIf VarType(value) = vbInteger Or VarType(value) = vbBoolean Then
+    serialize = CStr(value)
+  ElseIf IsArray(value) Then
+    ReDim serializedArray(UBound(value))
+    For i = 0 to UBound(value)
+      serializedArray(i) = serialize(value(i))
+    Next
+    serialize = "[" & Join(serializedArray, ",") & "]"
+  ElseIf IsObject(value) And TypeName(value) = "Scripting.Dictionary" Then
+    ReDim serializedObject(0)
+    For Each key in value
+      serializedObject(UBound(serializedObject)) = """" & escapeString(key) & """: " & serialize(value(key))
+      ReDim Preserve serializedObject(UBound(serializedObject) + 1)
+    Next
+    If UBound(serializedObject) > 0 Then
+      ReDim Preserve serializedObject(UBound(serializedObject) - 1)
+    End If
+    serialize = "{" & Join(serializedObject, ",") & "}"
+  Else
+    serialize = "Empty"
+  End If
+End Function

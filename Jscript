@@ -1,57 +1,29 @@
-function log(msg) {
-    var vbLog = new ActiveXObject('ScriptControl');
-    vbLog.Language = 'VBScript';
-    vbLog.AddCode('Sub LogMessage(msg)' + chr(13) + chr(10) +'  MsgBox msg' + chr(13) + chr(10) +'End Sub');
-    vbLog.Run('LogMessage', msg);
-}
-
 function escapeString(str) {
-    return str.replace(/\\/g, '\\\\')
-              .replace(/"/g, '\\"')
-              .replace(/\n/g, '\\n')
-              .replace(/\r/g, '\\r')
-              .replace(/\t/g, '\\t');
+    return str.replace(/\\/g, '\\\\').replace(/""/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
 }
 
 function serialize(value) {
-log('Serializing value: ' + value);
-    try {
-        if (typeof value === 'string') {
-            log('type of object: string');
-            return '"' + escapeString(value) + '"';
-        } else if (typeof value === 'number' || typeof value === 'boolean') {
-            log('type of object: number or boolean');
-            return String(value);
-        } else if (Object.prototype.toString.call(value) === '[object Array]') {
-            log('type of object: array');
-            var serializedArray = [];
-            for (var i = 0; i < value.length; i++) {
-                serializedArray.push(serialize(value[i]));
-            }
-            return '[' + serializedArray.join(',') + ']';
-        } else if (typeof value === 'object' && value !== null) {
-            log('type of object: object');
-            return objectToJson(value);
-        } else {
-            return 'null';
+    if (value === null) {
+        return 'null';
+    } else if (typeof value === 'string') {
+        return '\"' + escapeString(value) + '\"';
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+    } else if (Object.prototype.toString.call(value) === '[object Array]') {
+        var serializedArray = [];
+        for (var i = 0; i < value.length; i++) {
+            serializedArray.push(serialize(value[i]));
         }
-    } catch (error) {
-        return error.message;
-    }
-}
-
-function objectToJson(obj) {
-    try {
-        var entries = [];
-        for (var key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                var serializedKey = '"' + escapeString(key) + '"';
-                var serializedValue = serialize(obj[key]);
-                entries.push(serializedKey + ':' + serializedValue);
+        return '[' + serializedArray.join(',') + ']';
+    } else if (typeof value === 'object') {
+        var serializedObject = [];
+        for (var key in value) {
+            if (value.hasOwnProperty(key)) {
+                serializedObject.push('\"' + escapeString(key) + '\":' + serialize(value[key]));
             }
         }
-        return '{' + entries.join(',') + '}';
-    } catch (error) {
-        return error.message;
+        return '{' + serializedObject.join(',') + '}';
+    } else {
+        return 'null';
     }
 }

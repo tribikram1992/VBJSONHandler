@@ -1,0 +1,2 @@
+jsCode = "var obj = JSON.parse('" & jsonString & "');" & "obj.mixture.arrayA[0].fruit = 'JackFruit';" & " JSON.stringify(obj);"
+Browser("JavaScript Example").Page("JavaScript Example").RunScript(jsCode)

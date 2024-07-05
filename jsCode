@@ -1,2 +1,15 @@
 jsCode = "var obj = JSON.parse('" & jsonString & "');" & "obj.mixture.arrayA[0].fruit = 'JackFruit';" & " JSON.stringify(obj);"
 Browser("JavaScript Example").Page("JavaScript Example").RunScript(jsCode)
+
+
+
+' Example JSON string (replace with your actual JSON string)
+jsonString = "{""mixture"": {""arrayA"": [{""fruit"": ""Apple""}, {""fruit"": ""Banana""}]}}"
+
+' Construct the JavaScript code string
+jsCode = "var obj = JSON.parse('" & Replace(jsonString, "'", "\'") & "');" & _
+         "obj.mixture.arrayA[0].fruit = 'JackFruit';" & _
+         "JSON.stringify(obj);"
+
+' Run the JavaScript code using RunScript method
+Browser("JavaScript Example").Page("JavaScript Example").RunScript jsCode

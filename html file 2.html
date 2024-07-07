@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+
+<script type="text/javascript">
+    function toggle(id, val) {
+        if (val == "open") {
+            document.getElementById("subItem" + id).style.display = "block";
+            document.getElementById("main" + id).innerHTML = '&nbsp;<a href="javascript:void(0)" onclick="toggle(' + id + ', \'close\')" class="style7">-</a>&nbsp;';
+        } else {
+            document.getElementById("subItem" + id).style.display = "none";
+            document.getElementById("main" + id).innerHTML = '&nbsp;<a href="javascript:void(0)" onclick="toggle(' + id + ', \'open\')" class="style7">+</a>&nbsp;';
+        }
+    }
+</script>
+
+    <title></title>
+    <style type="text/css">
+        .style1
+        {
+            width: 163px;
+        }
+        .style2
+        {
+            width: 230px;
+        }
+        .style3
+        {
+            width: 140px;
+        }
+        .style4
+        {
+            width: 233px;
+        }
+        .style5
+        {
+            width: 45px;
+        }
+        .style6
+        {
+            width: 32px;
+        }
+        .style8
+        {
+            width: 273px;
+        }
+        .style7
+        {
+            text-decoration: none;
+        }
+        </style>
+</head>
+<body>
+
+    <p style="font-family: 'Microsoft Sans Serif'; font-size: xx-large; font-weight: bolder; height: 19px;">
+        Test 
+        Execution Report
+    </p>
+    <hr style="color: #800000">
+    <p style="font-family: 'Microsoft Sans Serif'; font-size: x-large; font-weight: bolder">
+        Summary</p>
+    <table style="width: 100%; font-family: Calibri; font-size: medium;">
+        <tbody><tr>
+            <td class="style1" style="background-color: #D6EBFC">
+                Host</td>
+            <td class="style2">
+                INBAN1SRTCY3</td>
+            <td class="style3" style="background-color: #D6EBFC">
+                Total Test Cases</td>
+            <td>
+                1</td>
+        </tr>
+        <tr>
+            <td class="style1" style="background-color: #D6EBFC">
+                Executed By</td>
+            <td class="style2">
+                tripatt</td>
+            <td class="style3" style="background-color: #D6EBFC">
+                Test Cases Passed</td>
+            <td>
+                1</td>
+        </tr>
+        <tr>
+            <td class="style1" style="background-color: #D6EBFC">
+                Operating System</td>
+            <td class="style2">
+                Windows 10</td>
+            <td class="style3" style="background-color: #D6EBFC">
+                Test Cases Failed</td>
+            <td>
+                0</td>
+        </tr>
+        <tr>
+            <td class="style1" style="background-color: #D6EBFC">
+                Start Time</td>
+            <td class="style2">
+                7/8/2024 2:27:12 AM</td>
+            <td class="style3" style="background-color: #D6EBFC">
+                Test Cases Not Run</td>
+            <td>
+                0</td>
+        </tr>
+        <tr>
+            <td class="style1" style="background-color: #D6EBFC">
+                End Time</td>
+            <td class="style2">
+                7/8/2024 2:27:26 AM</td>
+            <td class="style3" style="background-color: #D6EBFC">
+                Browser Name</td>
+            <td>
+                Chrome</td>
+        </tr>
+    </tbody></table>
+    <p style="font-family: 'Microsoft Sans Serif'; font-size: x-large; font-weight: bolder; text-decoration: underline;">
+        Overview - Test Suites</p>
+    
+    <table style="padding: 0px; width:100%; border-spacing: 0px;">
+        <tbody><tr>
+            <th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: x-large;" class="style6">
+                &nbsp;</th>
+            <th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: large;" class="style5">
+                S.No</th>
+			
+            <th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: large;" class="style7">
+                API Test Case Name</th>
+			
+			<th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: large;" class="style7">
+                Test Step Description</th>
+<th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: large;" class="style7">Expected Result</th>
+            <th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: large;" class="style4">
+                Result</th>
+            <th style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #007CA6; color: #FFFFFF; font-weight: bold; font-size: large;">
+                Duration (Seconds)</th>
+        </tr>
+ <tr>
+<td id="main1" style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #FFFFFF;">&nbsp;<a href="javascript:void(0)" onclick="toggle(1, 'open')" class="style7">+</a>&nbsp;</td>
+<td style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #FFFFFF;"> 1</td>
+
+<td style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #FFFFFF;"> APITest</td>
+
+<td style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #FFFFFF;"> RDC test case</td>
+<td style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #FFFFFF; color: #00D100;"> Passed</td>
+<td style="vertical-align: middle; text-align: center; font-family: Calibri; padding: 0px; margin: 0px; background-color: #FFFFFF;"> 0</td>
+</tr>
+<tr id="subItem1" style="display: none;"> 
+<td colspan="6" style="vertical-align: middle; text-align: center; font-family: Calibri;  margin: 0px; background-color: #FFFFFF;"> 
+
+<p></p>
+<p style="font-family: 'Trebuchet MS'; font-size: small; font-weight: bold; text-decoration: underline; text-align: left">Iteration 1</p>
+
+<table align="center" style="border-style: ridge; border-width: 2px; width:95%;" cellpadding="0" cellspacing="0"> 
+<tbody><tr>
+<th width="5%" style="border-style: solid; border-width: 1px; background-color: #00B5F0">Step No</th> 
+<th width="20%" style="border-style: solid; border-width: 1px; background-color: #00B5F0">Step Description</th> 
+<th width="35%" style="border-style: solid; border-width: 1px; background-color: #00B5F0">Expected Result</th> 
+<th width="35%" style="border-style: solid; border-width: 1px; background-color: #00B5F0">Automation Step Description</th> 
+<th width="10%" style="border-style: solid; border-width: 1px; background-color: #00B5F0">Result </th> 
+<th style="border-style: solid; border-width: 1px; background-color: #00B5F0">Description</th> 
+</tr>
+
+<tr>
+<td style="border-style: solid; border-width: 1px;"> Step 1</td>
+<td style="border-style: solid; text-align: left; border-width: 1px;"> Call GET Method in pss_iot_integration API test</td>
+<td style="border-style: solid; text-align: left; border-width: 1px;"> Status code should be 200</td>
+<td style="border-style: solid; text-align: left; border-width: 1px;"> Call GET Method in pss_iot_integration API test</td>
+
+<td style="color:#00D100;border-style: solid; border-width: 1px;"> Passed</td>
+
+<td style="border-style: solid; text-align: left; border-width: 1px;"> CALL_API_TEST - pss_iot_integration with iteration no 1 Completed Successfully</td>
+</tr>
+
+<tr>
+<td style="border-style: solid; border-width: 1px;"> </td>
+<td style="border-style: solid; text-align: left; border-width: 1px;"> </td>
+<td style="border-style: solid; text-align: left; border-width: 1px;"> </td>
+<td style="border-style: solid; text-align: left; border-width: 1px;"> Call POST Method in sales_Order API test</td>
+
+<td style="color:#00D100;border-style: solid; border-width: 1px;"> Passed</td>
+
+<td style="border-style: solid; text-align: left; border-width: 1px;"> CALL_API_TEST - sales_Order with iteration no 1 Completed Successfully</td>
+</tr>
+
+</tbody></table>
+
+<p></p>
+</td> </tr>
+</tbody></table>   
+</body></html>

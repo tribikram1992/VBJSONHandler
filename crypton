@@ -1,7 +1,19 @@
 Function decryptUsingCrypton(encryptedPassword)
-    ' Path to crypton.exe
+    ' Primary path to crypton.exe
     Dim cryptonPath
     cryptonPath = "C:\path\to\crypton.exe"
+
+    ' Secondary path to cryptonapp.exe
+    Dim secondaryCryptonPath
+    secondaryCryptonPath = "C:\path\to\cryptonapp.exe"
+
+    ' Check if the primary path exists
+    Dim fso
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FileExists(cryptonPath) Then
+        ' If primary path does not exist, use the secondary path
+        cryptonPath = secondaryCryptonPath
+    End If
 
     ' Command to decrypt the password
     Dim decryptCommand
@@ -11,6 +23,11 @@ Function decryptUsingCrypton(encryptedPassword)
     Dim oShell, oExec, oOutput
     Set oShell = CreateObject("WScript.Shell")
     Set oExec = oShell.Exec(decryptCommand)
+
+    ' Wait for the process to complete
+    Do While oExec.Status = 0
+        WScript.Sleep 100
+    Loop
 
     ' Capture the decrypted password from the output
     Dim decryptedPassword
@@ -22,6 +39,7 @@ Function decryptUsingCrypton(encryptedPassword)
     ' Clean up
     Set oShell = Nothing
     Set oExec = Nothing
+    Set fso = Nothing
 
     ' Return the decrypted password
     decryptUsingCrypton = decryptedPassword

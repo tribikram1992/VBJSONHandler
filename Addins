@@ -25,3 +25,277 @@ AgGrid
 UIGrid
 WPF
 Silverlight
+
+
+
+### 1. **.NET Add-in**
+- **Purpose**: To test .NET applications.
+- **Features**:
+  - Supports WinForms and WPF applications.
+  - Provides object identification and interaction for .NET controls and forms.
+- **Benefits**:
+  - Automates testing for .NET applications, increasing efficiency.
+  - Reduces manual effort and enhances test accuracy.
+- **Supported Technologies**: .NET Framework, .NET Core, WinForms, WPF.
+
+### 2. **ActiveX Add-in**
+- **Purpose**: To test applications with ActiveX controls.
+- **Features**:
+  - Supports ActiveX controls in web and desktop environments.
+  - Provides object recognition and interaction capabilities.
+- **Benefits**:
+  - Automates testing of legacy ActiveX controls.
+  - Increases test coverage and reduces manual testing.
+- **Supported Technologies**: ActiveX controls in web and desktop applications.
+
+### 3. **Delphi Add-in**
+- **Purpose**: To test Delphi applications.
+- **Features**:
+  - Supports Delphi VCL (Visual Component Library) applications.
+  - Provides object identification and interaction with Delphi controls and forms.
+- **Benefits**:
+  - Facilitates automated testing of Delphi applications.
+  - Reduces testing time and increases accuracy.
+- **Supported Technologies**: Delphi VCL applications.
+
+### 4. **Flex Add-in**
+- **Purpose**: To test Adobe Flex applications.
+- **Features**:
+  - Supports Flex applications in Flash Player or AIR.
+  - Provides object recognition for Flex components.
+- **Benefits**:
+  - Automates testing of rich internet applications (RIAs) in Flex.
+  - Enhances test efficiency and coverage.
+- **Supported Technologies**: Adobe Flex, Flash Player, AIR.
+
+### 5. **Java Add-in**
+- **Purpose**: To test Java applications.
+- **Features**:
+  - Supports Java Swing and AWT applications.
+  - Provides object recognition and interaction with Java components.
+- **Benefits**:
+  - Facilitates automated testing of Java desktop and web applications.
+  - Improves test reliability and reduces manual testing.
+- **Supported Technologies**: Java Swing, AWT, Java applets.
+
+### 6. **Mobile Add-in**
+- **Purpose**: To test mobile applications.
+- **Features**:
+  - Supports iOS and Android applications.
+  - Provides capabilities for interaction and verification of mobile app elements.
+- **Benefits**:
+  - Enables cross-platform mobile testing.
+  - Increases test coverage and efficiency for mobile apps.
+- **Supported Technologies**: iOS, Android.
+
+### 7. **Oracle Add-in**
+- **Purpose**: To test Oracle applications.
+- **Features**:
+  - Supports Oracle Forms and Oracle E-Business Suite.
+  - Provides object recognition and automation capabilities.
+- **Benefits**:
+  - Automates testing for Oracle applications.
+  - Enhances testing efficiency and reduces manual efforts.
+- **Supported Technologies**: Oracle Forms, Oracle E-Business Suite.
+
+### 8. **PDF Add-in**
+- **Purpose**: To test PDF documents.
+- **Features**:
+  - Allows interaction with PDF files for content verification.
+  - Supports reading and validation of text within PDFs.
+- **Benefits**:
+  - Automates verification of PDF content.
+  - Ensures accuracy and consistency of PDF documents.
+- **Supported Technologies**: PDF files.
+
+### 9. **PeopleSoft Add-in**
+- **Purpose**: To test PeopleSoft applications.
+- **Features**:
+  - Supports PeopleSoft’s web and client applications.
+  - Provides object recognition and automation for PeopleSoft components.
+- **Benefits**:
+  - Automates testing for PeopleSoft applications.
+  - Increases test accuracy and reduces manual effort.
+- **Supported Technologies**: PeopleSoft applications.
+
+### 10. **PowerBuilder Add-in**
+- **Purpose**: To test PowerBuilder applications.
+- **Features**:
+  - Supports PowerBuilder desktop applications.
+  - Provides object recognition for PowerBuilder controls and windows.
+- **Benefits**:
+  - Facilitates automated testing for PowerBuilder applications.
+  - Enhances test coverage and reduces testing time.
+- **Supported Technologies**: PowerBuilder applications.
+
+### 11. **Qt Add-in**
+- **Purpose**: To test Qt framework applications.
+- **Features**:
+  - Supports Qt applications across desktop and embedded systems.
+  - Provides object recognition for Qt widgets.
+- **Benefits**:
+  - Automates testing for cross-platform Qt applications.
+  - Increases testing efficiency and coverage.
+- **Supported Technologies**: Qt framework.
+
+### 12. **SAP Add-in**
+- **Purpose**: To test SAP applications.
+- **Features**:
+  - Supports SAP GUI and web applications.
+  - Provides object recognition and automation capabilities for SAP components.
+- **Benefits**:
+  - Automates end-to-end testing for SAP applications.
+  - Reduces manual testing effort and ensures quality.
+- **Supported Technologies**: SAP GUI, SAP Web applications.
+
+### 13. **SAP NWBC Desktop Add-in**
+- **Purpose**: To test SAP NetWeaver Business Client (NWBC) desktop applications.
+- **Features**:
+  - Supports SAP NWBC interface for desktop applications.
+  - Provides object recognition for NWBC components.
+- **Benefits**:
+  - Automates testing for SAP NWBC desktop clients.
+  - Enhances testing efficiency for NWBC applications.
+- **Supported Technologies**: SAP NWBC Desktop.
+
+### 14. **SAPUI5 Add-in**
+- **Purpose**: To test SAPUI5 applications.
+- **Features**:
+  - Supports SAPUI5-based web applications.
+  - Provides object recognition and interaction for SAPUI5 components.
+- **Benefits**:
+  - Automates testing for modern SAPUI5 web applications.
+  - Improves test coverage and efficiency for SAPUI5 solutions.
+- **Supported Technologies**: SAPUI5 framework.
+
+### 15. **SAPWDJ Add-in**
+- **Purpose**: To test SAP Web Dynpro Java (WDJ) applications.
+- **Features**:
+  - Supports SAP Web Dynpro Java applications.
+  - Provides object recognition and test automation capabilities.
+- **Benefits**:
+  - Automates testing for SAP Web Dynpro Java applications.
+  - Reduces manual testing effort and improves test accuracy.
+- **Supported Technologies**: SAP Web Dynpro Java.
+
+### 16. **SAPWebExt Add-in**
+- **Purpose**: To test SAP Web Extensions.
+- **Features**:
+  - Supports web-based SAP extensions.
+  - Provides object recognition and interaction for SAP Web Extension components.
+- **Benefits**:
+  - Facilitates automation of SAP Web Extensions testing.
+  - Enhances efficiency and accuracy in testing SAP web extensions.
+- **Supported Technologies**: SAP Web Extensions.
+
+### 17. **Siebel Add-in**
+- **Purpose**: To test Siebel CRM applications.
+- **Features**:
+  - Supports Siebel CRM web and desktop applications.
+  - Provides object recognition and automation for Siebel components.
+- **Benefits**:
+  - Automates end-to-end testing for Siebel CRM applications.
+  - Reduces testing effort and improves quality for Siebel solutions.
+- **Supported Technologies**: Siebel CRM.
+
+### 18. **Stingray Add-in**
+- **Purpose**: To test applications using Stingray controls.
+- **Features**:
+  - Supports applications with Stingray controls.
+  - Provides object recognition and interaction with Stingray components.
+- **Benefits**:
+  - Automates testing for applications using Stingray controls.
+  - Enhances test coverage for applications with Stingray components.
+- **Supported Technologies**: Stingray controls.
+
+### 19. **Terminal Emulators Add-in**
+- **Purpose**: To test terminal-based applications.
+- **Features**:
+  - Supports interaction with terminal emulators like IBM 3270 and 5250.
+  - Provides automation capabilities for terminal-based interfaces.
+- **Benefits**:
+  - Facilitates testing of legacy terminal-based applications.
+  - Enhances testing efficiency for terminal emulator-based systems.
+- **Supported Technologies**: IBM 3270, IBM 5250, and other terminal emulators.
+
+### 20. **UI Automation Add-in**
+- **Purpose**: To test applications using UI Automation technology.
+- **Features**:
+  - Supports UI Automation for .NET applications.
+  - Provides object recognition and interaction with UI Automation elements.
+- **Benefits**:
+  - Automates testing for applications using UI Automation.
+  - Improves test efficiency and accuracy for .NET applications with UI Automation.
+- **Supported Technologies**: UI Automation for .NET.
+
+### 21. **Visual Basic Add-in**
+- **Purpose**: To test Visual Basic applications.
+- **Features**:
+  - Supports Visual Basic 6.0 and VB.NET applications.
+  - Provides object recognition and interaction with Visual Basic elements.
+- **Benefits**:
+  - Facilitates automated testing for Visual Basic applications.
+  - Enhances testing efficiency and coverage.
+- **Supported Technologies**: Visual Basic 6.0, VB.NET.
+
+### 22. **VisualAge SmallTalk Add-in**
+- **Purpose**: To test applications developed using VisualAge SmallTalk.
+- **Features**:
+  - Supports VisualAge SmallTalk applications.
+  - Provides object recognition and automation capabilities for SmallTalk controls.
+- **Benefits**:
+  - Automates testing for VisualAge SmallTalk applications.
+  - Reduces manual testing effort and improves test coverage.
+- **Supported Technologies**: VisualAge SmallTalk.
+
+### 23. **Web Add-in**
+- **Purpose**: To test web applications.
+- **Features**:
+  - Supports various web technologies including HTML, JavaScript, and AJAX.
+ 
+
+ - Provides object recognition and interaction with web elements.
+- **Benefits**:
+  - Automates testing for web applications, increasing efficiency.
+  - Reduces manual testing and enhances test accuracy.
+- **Supported Technologies**: HTML, JavaScript, AJAX, and other web technologies.
+
+### 24. **AgGrid Add-in**
+- **Purpose**: To test applications using AG Grid.
+- **Features**:
+  - Supports AG Grid components in web applications.
+  - Provides object recognition and interaction with AG Grid elements.
+- **Benefits**:
+  - Automates testing for applications using AG Grid.
+  - Increases test accuracy and coverage for AG Grid-based applications.
+- **Supported Technologies**: AG Grid.
+
+### 25. **UIGrid Add-in**
+- **Purpose**: To test applications using UI Grid.
+- **Features**:
+  - Supports UI Grid components in web applications.
+  - Provides object recognition and interaction with UI Grid elements.
+- **Benefits**:
+  - Automates testing for applications using UI Grid.
+  - Enhances test efficiency and accuracy for UI Grid-based applications.
+- **Supported Technologies**: UI Grid.
+
+### 26. **WPF Add-in**
+- **Purpose**: To test applications using Windows Presentation Foundation (WPF).
+- **Features**:
+  - Supports WPF applications and controls.
+  - Provides object recognition and interaction capabilities for WPF elements.
+- **Benefits**:
+  - Facilitates automated testing for WPF applications.
+  - Reduces testing time and increases test coverage.
+- **Supported Technologies**: WPF (Windows Presentation Foundation).
+
+### 27. **Silverlight Add-in**
+- **Purpose**: To test applications developed with Silverlight.
+- **Features**:
+  - Supports Silverlight applications.
+  - Provides object recognition and interaction with Silverlight controls.
+- **Benefits**:
+  - Automates testing for Silverlight-based applications.
+  - Enhances testing efficiency and accuracy for Silverlight solutions.
+- **Supported Technologies**: Silverlight.

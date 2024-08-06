@@ -1,0 +1,88 @@
+uft addin details
+Here’s a detailed breakdown of each of the 21 UFT add-ins, including supported technologies and their purposes:
+
+### 1. **Web Add-in**
+- **Supported Technologies:** HTML, JavaScript, AJAX, and web technologies used in browsers like Internet Explorer, Chrome, Firefox, and Edge.
+- **Purpose:** Automates testing of web applications across multiple browsers, handling dynamic web objects and ensuring functionality in diverse web environments.
+
+### 2. **Java Add-in**
+- **Supported Technologies:** Java applications, Java applets, Java Swing, AWT, and JavaFX.
+- **Purpose:** Enables automation for Java-based applications, providing support for Java-specific GUI objects and components.
+
+### 3. **Oracle Add-in**
+- **Supported Technologies:** Oracle Forms, Oracle Applications (e.g., Oracle E-Business Suite).
+- **Purpose:** Facilitates automated testing of Oracle-based applications, enhancing script creation and object recognition for Oracle-specific controls.
+
+### 4. **SAP Add-in**
+- **Supported Technologies:** SAP GUI for Windows, SAP GUI for HTML, and SAP Web Applications.
+- **Purpose:** Automates testing for SAP environments, providing object recognition and interaction capabilities for SAP applications.
+
+### 5. **VBScript Add-in**
+- **Supported Technologies:** VBScript language features and libraries.
+- **Purpose:** Expands scripting capabilities within UFT, allowing for more complex and customized test scenarios using VBScript.
+
+### 6. **Flex Add-in**
+- **Supported Technologies:** Adobe Flex applications, Flex components, and controls.
+- **Purpose:** Enables automation of Adobe Flex applications, supporting complex and dynamic Flex UI elements.
+
+### 7. **Web Services Add-in**
+- **Supported Technologies:** SOAP, RESTful APIs, and Web Services protocols.
+- **Purpose:** Provides capabilities for testing web services and APIs, allowing for the creation and validation of web service requests and responses.
+
+### 8. **Mobile Add-in**
+- **Supported Technologies:** Android, iOS, and mobile applications across these platforms.
+- **Purpose:** Automates testing of mobile applications on Android and iOS devices, providing support for mobile object recognition and interaction.
+
+### 9. **Siebel Add-in**
+- **Supported Technologies:** Siebel CRM and Siebel applications.
+- **Purpose:** Facilitates automation of Siebel-based applications, including Siebel CRM, with specific object recognition for Siebel controls.
+
+### 10. **HTML Add-in**
+- **Supported Technologies:** HTML, XHTML, and web-based applications using HTML.
+- **Purpose:** Automates testing for HTML web applications, enhancing script creation and execution for HTML-specific elements.
+
+### 11. **Windows Add-in**
+- **Supported Technologies:** Windows applications, including desktop applications and standard Windows controls.
+- **Purpose:** Automates testing of traditional Windows desktop applications, providing object recognition for native Windows controls.
+
+### 12. **Terminal Emulator Add-in**
+- **Supported Technologies:** Terminal emulators like IBM 3270, IBM 5250, and other similar terminal-based interfaces.
+- **Purpose:** Facilitates automation of legacy terminal-based applications, integrating with modern testing environments.
+
+### 13. **ActiveX Add-in**
+- **Supported Technologies:** ActiveX controls used in Windows applications.
+- **Purpose:** Automates testing for applications that utilize ActiveX controls, providing specific handling for these legacy components.
+
+### 14. **JavaScript Add-in**
+- **Supported Technologies:** JavaScript-based applications and controls.
+- **Purpose:** Enhances automation for applications that heavily use JavaScript, improving accuracy in scripting and object recognition.
+
+### 15. **RDP Add-in**
+- **Supported Technologies:** Remote Desktop Protocol (RDP) applications.
+- **Purpose:** Enables testing of applications accessed via RDP, supporting automation in virtualized desktop environments.
+
+### 16. **Citrix Add-in**
+- **Supported Technologies:** Citrix virtualized applications and desktops.
+- **Purpose:** Automates testing for applications delivered through Citrix environments, providing support for virtualized application interfaces.
+
+### 17. **Microsoft Dynamics Add-in**
+- **Supported Technologies:** Microsoft Dynamics CRM, ERP, and other Dynamics applications.
+- **Purpose:** Facilitates automation of Microsoft Dynamics applications, improving efficiency in testing Dynamics-specific controls and functionalities.
+
+### 18. **Salesforce Add-in**
+- **Supported Technologies:** Salesforce CRM and Salesforce applications.
+- **Purpose:** Automates testing for Salesforce applications, providing object recognition and interaction capabilities for Salesforce-specific components.
+
+### 19. **Mainframe Add-in**
+- **Supported Technologies:** Mainframe applications, including legacy mainframe systems.
+- **Purpose:** Enables automation of legacy mainframe applications, integrating testing with modern automation frameworks.
+
+### 20. **Jenkins Add-in**
+- **Supported Technologies:** Jenkins CI/CD pipelines.
+- **Purpose:** Integrates UFT with Jenkins for continuous integration and continuous testing, allowing for automated test execution within Jenkins pipelines.
+
+### 21. **Postman Add-in**
+- **Supported Technologies:** Postman API testing tool and collections.
+- **Purpose:** Integrates UFT with Postman for API testing, enabling the execution and validation of API requests created in Postman directly within UFT.
+
+These add-ins extend UFT's functionality to cover a wide range of technologies and applications, making it a versatile tool for automated testing across various environments and platforms.

@@ -1,4 +1,17 @@
 uft addin details
+
+
+1. Web Add-in
+Features:
+
+Supports web-based applications across different browsers (IE, Chrome, Firefox, Edge).
+Capable of handling dynamic web objects.
+Supports web technologies like HTML, JavaScript, AJAX.
+Benefits:
+
+Enables automation of web applications to ensure functionality across different web browsers.
+Enhances script creation with built-in web object recognition.
+
 Here’s a detailed breakdown of each of the 21 UFT add-ins, including supported technologies and their purposes:
 
 ### 1. **Web Add-in**

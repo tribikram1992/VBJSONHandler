@@ -1,0 +1,63 @@
+' Function to get browser version using special URLs like chrome://version
+Function GetBrowserVersion(browserName)
+    Dim objBrowser, versionText, version, pageSource
+    Set objBrowser = Nothing
+    
+    ' Initialize browser based on the browserName argument
+    If LCase(browserName) = "chrome" Then
+        Set objBrowser = Browser("creationtime:=0")
+    ElseIf LCase(browserName) = "firefox" Then
+        Set objBrowser = Browser("creationtime:=0")
+    End If
+    
+    ' Open the special URL to get version
+    If Not objBrowser Is Nothing Then
+        If LCase(browserName) = "chrome" Then
+            objBrowser.Navigate("chrome://version")
+        ElseIf LCase(browserName) = "firefox" Then
+            objBrowser.Navigate("about:version")
+        End If
+        
+        ' Wait for the page to load
+        objBrowser.Wait(5)
+        
+        ' Extract the page source
+        pageSource = objBrowser.PageSource
+        
+        ' Check for the version string based on the browser type
+        If LCase(browserName) = "chrome" Then
+            ' Extract the version from the chrome://version page
+            versionText = GetTextBetween(pageSource, "Google Chrome", "<")
+            version = Trim(versionText)
+        ElseIf LCase(browserName) = "firefox" Then
+            ' Extract the version from the about:version page
+            versionText = GetTextBetween(pageSource, "Mozilla Firefox", "<")
+            version = Trim(versionText)
+        End If
+        GetBrowserVersion = version
+    Else
+        GetBrowserVersion = "Browser not supported."
+    End If
+End Function
+
+' Helper function to extract text between two substrings
+Function GetTextBetween(text, startText, endText)
+    Dim startPos, endPos, result
+    startPos = InStr(text, startText)
+    endPos = InStr(startPos, text, endText)
+    If startPos > 0 And endPos > 0 Then
+        result = Mid(text, startPos + Len(startText), endPos - startPos - Len(startText))
+        GetTextBetween = result
+    Else
+        GetTextBetween = ""
+    End If
+End Function
+
+' Example usage
+Dim chromeVersion, firefoxVersion
+chromeVersion = GetBrowserVersion("Chrome")
+firefoxVersion = GetBrowserVersion("Firefox")
+
+' Output the results
+MsgBox "Chrome Version: " & chromeVersion
+MsgBox "Firefox Version: " & firefoxVersion

@@ -1,4 +1,4 @@
-' Function to get browser version using special URLs like chrome://version
+' Function to get browser version using special URLs like chrome://version, about:version, edge://version
 Function GetBrowserVersion(browserName)
     Dim objBrowser, versionText, version, pageSource
     Set objBrowser = Nothing
@@ -8,6 +8,10 @@ Function GetBrowserVersion(browserName)
         Set objBrowser = Browser("creationtime:=0")
     ElseIf LCase(browserName) = "firefox" Then
         Set objBrowser = Browser("creationtime:=0")
+    ElseIf LCase(browserName) = "ie" Then
+        Set objBrowser = Browser("creationtime:=0")
+    ElseIf LCase(browserName) = "edge" Then
+        Set objBrowser = Browser("creationtime:=0")
     End If
     
     ' Open the special URL to get version
@@ -16,6 +20,10 @@ Function GetBrowserVersion(browserName)
             objBrowser.Navigate("chrome://version")
         ElseIf LCase(browserName) = "firefox" Then
             objBrowser.Navigate("about:version")
+        ElseIf LCase(browserName) = "ie" Then
+            objBrowser.Navigate("about:internet")
+        ElseIf LCase(browserName) = "edge" Then
+            objBrowser.Navigate("edge://version")
         End If
         
         ' Wait for the page to load
@@ -32,6 +40,14 @@ Function GetBrowserVersion(browserName)
         ElseIf LCase(browserName) = "firefox" Then
             ' Extract the version from the about:version page
             versionText = GetTextBetween(pageSource, "Mozilla Firefox", "<")
+            version = Trim(versionText)
+        ElseIf LCase(browserName) = "ie" Then
+            ' Extract the version from the about:internet page
+            versionText = GetTextBetween(pageSource, "Internet Explorer", "<")
+            version = Trim(versionText)
+        ElseIf LCase(browserName) = "edge" Then
+            ' Extract the version from the edge://version page
+            versionText = GetTextBetween(pageSource, "Microsoft Edge", "<")
             version = Trim(versionText)
         End If
         GetBrowserVersion = version
@@ -54,10 +70,14 @@ Function GetTextBetween(text, startText, endText)
 End Function
 
 ' Example usage
-Dim chromeVersion, firefoxVersion
+Dim chromeVersion, firefoxVersion, ieVersion, edgeVersion
 chromeVersion = GetBrowserVersion("Chrome")
 firefoxVersion = GetBrowserVersion("Firefox")
+ieVersion = GetBrowserVersion("IE")
+edgeVersion = GetBrowserVersion("Edge")
 
 ' Output the results
 MsgBox "Chrome Version: " & chromeVersion
 MsgBox "Firefox Version: " & firefoxVersion
+MsgBox "Internet Explorer Version: " & ieVersion
+MsgBox "Edge Version: " & edgeVersion

@@ -1,0 +1,413 @@
+Public reportFile
+
+Sub main()
+    Dim reportPath, totalCases, totalPassed, totalFailed, totalSkipped
+    Dim stepsCount, stepsDescriptions, stepsStatuses, stepScreenshots
+    Dim testStartTime, testEndTime, testDuration
+
+    reportPath = "C:/output/EnhancedReportWithPopupScreenshotsssdd.html"
+    totalCases = 3
+    totalPassed = 1
+    totalFailed = 1
+    totalSkipped = 1
+
+    testStartTime = "10:00:00 AM"
+    testEndTime = "10:05:00 AM"
+    testDuration = "5 mins"
+    
+    ' Initialize the report
+    InitializeReport reportPath
+
+    ' Log test cases
+    stepsCount = 2
+    stepsDescriptions = Array("Open login page", "Enter username and password")
+    stepsStatuses = Array("Pass", "Fail")
+    errorMsgs = Array("", "Sample Error")
+    stepScreenshots = Array("", "C:\output\screenshot.jpg")
+    LogTestCase "TC001", "Verify login functionality", "Fail", testStartTime, testEndTime, testDuration, stepsCount, stepsDescriptions, stepsStatuses, stepScreenshots, errorMsgs
+
+    stepsCount = 3
+    stepsDescriptions = Array("Open homepage", "Click on product", "Verify product details")
+    stepsStatuses = Array("Pass", "Pass", "Pass")
+    stepScreenshots = Array("", "", "")
+    errorMsgs = Array("", "Sample skip Error", "")
+    LogTestCase "TC002", "Check homepage load", "Pass", testStartTime, testEndTime, testDuration, stepsCount, stepsDescriptions, stepsStatuses, stepScreenshots, errorMsgs
+
+    stepsCount = 1
+    stepsDescriptions = Array("Access admin panel")
+    stepsStatuses = Array("Skip")
+    stepScreenshots = Array("")
+    errorMsgs = Array("")
+    LogTestCase "TC003", "Test admin features", "Skip", testStartTime, testEndTime, testDuration, stepsCount, stepsDescriptions, stepsStatuses, stepScreenshots, errorMsgs
+
+    ' Finalize the report
+    FinalizeReport totalCases, totalPassed, totalFailed, totalSkipped
+    MsgBox "Report Generated"
+End Sub
+
+Sub InitializeReport(reportPath)
+    reportFilePath = reportPath
+    Set reportFile = CreateObject("Scripting.FileSystemObject").CreateTextFile(reportFilePath, True)
+
+    reportFile.WriteLine "<!DOCTYPE html>"
+    reportFile.WriteLine "<html lang='en'>"
+    reportFile.WriteLine "<head>"
+    reportFile.WriteLine "    <meta charset='UTF-8'>"
+    reportFile.WriteLine "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+    reportFile.WriteLine "    <title>Enhanced Report</title>"
+    reportFile.WriteLine "    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'>"
+    reportFile.WriteLine "    <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>"
+    reportFile.WriteLine "    <style>"
+    reportFile.WriteLine "        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9; display: flex; background-image : url('C:\\output\\background.png'); background-size: contain; overflow:auto; filter: opacity(01); }"
+    reportFile.WriteLine "        .sidebar { width: 5%; background-color: #2c3e50; color: white; padding: 20px; position: fixed; height: 100%; width : 10%; margin-top : 3%;}"
+    reportFile.WriteLine "        .sidebar a { color: white; text-decoration: none; display: block; margin: 10px 0; padding: 10px; border-radius: 5px; }"
+    reportFile.WriteLine "        .sidebar a:hover, .sidebar a.active { background-color: #1abc9c; }"
+    reportFile.WriteLine "        .content { margin-left: 15%; padding: 20px; flex-grow: 1; margin-top: 2%;min-height: 100%;}"
+    reportFile.WriteLine "        .hidden { display: none; }"
+    'reportFile.WriteLine "        .navbar { background-color: #2c3e50; color: white; padding: 15px; text-align: center; }"
+    reportFile.WriteLine "        .test-case { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; }"
+    reportFile.WriteLine "        .details { font-size: 14px; margin-top: 5px; }"
+    reportFile.WriteLine "        .steps { margin-left: 20px; }"  ' Modify to remove hidden by default
+    reportFile.WriteLine "        .step { margin-bottom: 10px; display: flex; justify-content: space-between; }"
+    reportFile.WriteLine "        h3.pass {color: green; }"
+    reportFile.WriteLine "        h3.fail { color: red; }"
+    reportFile.WriteLine "        h3.skip { color: orange; }"
+    reportFile.WriteLine "         td.pass { color: green; }"
+    reportFile.WriteLine "         td.fail { color: red; }"
+    reportFile.WriteLine "         td.skip { color: orange; }"
+    reportFile.WriteLine "        .attachments img { max-width: 200px; margin: 10px; }"
+    reportFile.WriteLine "        .chart-container { position: relative; margin: 20px auto; height: 400px; width: 400px; }"
+    reportFile.WriteLine "        .icon { font-size: 24px; margin-right: 10px; }"
+    reportFile.WriteLine "        .sidebar a i { margin-right: 8px; }"
+    reportFile.WriteLine "        td { text-align: left; vertical-align: middle; }"
+    reportFile.WriteLine "        th { text-align: left; vertical-align: middle; }"
+    reportFile.WriteLine "        .test-case { z-index: 2; }"
+    reportFile.WriteLine "        img { z-index: 1; overflow : clip }"
+    reportFile.WriteLine "        button { display: flex; width= 20%; height = 10%; }"
+    reportFile.WriteLine "        button img { width: 100%; height: 100%; object-fit: cover;  }"
+    reportFile.WriteLine "       table {width:100%; border-collapse:collapse; margin-top : 10px;}"
+    
+    reportFile.WriteLine "    /* Top Navbar Styles */"
+reportFile.WriteLine "    .navbar {"
+reportFile.WriteLine "        position: fixed;" ' Fix the navbar at the top of the page
+reportFile.WriteLine "        top: 0;"
+reportFile.WriteLine "        left: 0;"
+reportFile.WriteLine "        width: 100%;"
+'reportFile.WriteLine "        background-color: #333;"
+reportFile.WriteLine "        padding: 10px 20px;"
+reportFile.WriteLine "        color: #030733; background-color :#0c1170; "
+reportFile.WriteLine "        z-index: 1000;" ' Ensure it stays on top of other content"
+reportFile.WriteLine "    }"
+reportFile.WriteLine "    .navbar img {"
+reportFile.WriteLine "        height: 40px;" ' Adjust logo size
+reportFile.WriteLine "        width: auto;"
+reportFile.WriteLine "        float: Right; margin : 0% 1%; vertial-align: middle;"
+reportFile.WriteLine "    }"
+reportFile.WriteLine "    .navbar .test-time {"
+reportFile.WriteLine "        font-size: 16px;"
+reportFile.WriteLine "        font-weight: bold;"
+reportFile.WriteLine "    }"
+reportFile.WriteLine ""
+    
+
+reportFile.WriteLine "    .dashboardDetails {"
+reportFile.WriteLine "        width: 100%;"
+reportFile.WriteLine "        border-collapse: collapse;"
+reportFile.WriteLine "        table-layout: fixed;" ' Ensures cells have equal width
+reportFile.WriteLine "    }"
+reportFile.WriteLine ""
+reportFile.WriteLine "    .dashboardDetails td {"
+reportFile.WriteLine "        padding: 8px;"
+reportFile.WriteLine "        text-align: left;"
+reportFile.WriteLine "        vertical-align: middle;"
+reportFile.WriteLine "        border: 1px solid #ddd;"
+reportFile.WriteLine "    }"
+reportFile.WriteLine ""
+reportFile.WriteLine "    #chart {"
+reportFile.WriteLine "        width: 100% ;"
+reportFile.WriteLine "        height: 100% ;"
+reportFile.WriteLine "        border: 1px solid #000;"
+reportFile.WriteLine "    }"
+reportFile.WriteLine ""
+reportFile.WriteLine "    .dashboardDetails td:not(:last-child) {"
+reportFile.WriteLine "        width: 50%;"
+reportFile.WriteLine "    }"
+    
+    
+    reportFile.WriteLine "    </style>"
+    reportFile.WriteLine "<script>"
+    
+    
+    reportFile.WriteLine "    window.onload = function() {"
+    
+
+    
+    reportFile.WriteLine "        // Get all elements with the class containing 'test-case'"
+    reportFile.WriteLine "        var testCases = document.querySelectorAll('.test-case');"
+    reportFile.WriteLine "        "
+    reportFile.WriteLine "        // Get the dashboard view container"
+    reportFile.WriteLine "        var testView = document.getElementById('testView');"
+    reportFile.WriteLine "        const elements = document.querySelectorAll('[id^=screenshotPopup]');"
+    reportFile.WriteLine "        elements.forEach(function(element) { element.remove(); });"
+    reportFile.WriteLine "        const popupDiv = document.createElement('div');popupDiv.id = 'screenshotPopup'; popupDiv.className = 'popup';popupDiv.style.display = 'none';const closeButton = document.createElement('button');closeButton.textContent = 'Close';closeButton.onclick = closePopup;popupDiv.appendChild(closeButton);"
+    reportFile.WriteLine "        testView.appendChild(popupDiv);"
+    reportFile.WriteLine "        // Loop through all test cases and move them to the dashboard view"
+    reportFile.WriteLine "        testCases.forEach(function(testCase) {"
+    reportFile.WriteLine "            // Remove the test case from its current position in the DOM"
+    reportFile.WriteLine "            testCase.remove();"
+    reportFile.WriteLine "            "
+    reportFile.WriteLine "            // Append it to the dashboard view"
+    reportFile.WriteLine "            testView.appendChild(testCase);"
+    reportFile.WriteLine "        });    "
+    reportFile.WriteLine "    };"
+    
+    reportFile.WriteLine "function toggleTestSteps(testCaseDivID) {"
+    reportFile.WriteLine "    var stepsDiv = document.getElementById(testCaseDivID);"
+    reportFile.WriteLine "    stepsDiv.style.border = 'collapse'"
+    reportFile.WriteLine "    console.log('Toggling test steps for: ' + testCaseDivID);"
+    reportFile.WriteLine "    if (stepsDiv.style.display === 'none' || stepsDiv.style.display === '') {"
+    reportFile.WriteLine "        stepsDiv.style.display = 'block';"
+    reportFile.WriteLine "    } else {"
+    reportFile.WriteLine "        stepsDiv.style.display = 'none';"
+    reportFile.WriteLine "    }"
+    reportFile.WriteLine "}"
+
+    reportFile.WriteLine "function showView(viewID) {"
+    reportFile.WriteLine "    document.getElementById('dashboardView').classList.add('hidden');"
+    reportFile.WriteLine "    document.getElementById('testView').classList.add('hidden');"
+    reportFile.WriteLine "    document.getElementById('exceptionView').classList.add('hidden');"
+    reportFile.WriteLine "    document.getElementById('dashboardView').classList.remove('active');"
+    reportFile.WriteLine "    document.getElementById('testView').classList.remove('active');"
+    reportFile.WriteLine "    document.getElementById('exceptionView').classList.remove('active');"
+    reportFile.WriteLine "    document.getElementById(viewID).classList.remove('hidden');"
+    reportFile.WriteLine "    document.getElementById(viewID).classList.add('active');"
+    
+    reportFile.WriteLine "    if(viewID==='exceptionView'){"
+    reportFile.WriteLine "        // Get all elements with the class containing 'test-case failed'"
+    reportFile.WriteLine "        var testCases = document.querySelectorAll('.test-case.fail');"
+    reportFile.WriteLine "        var testCasesSkipped = document.querySelectorAll('.test-case.skip');"
+    reportFile.WriteLine "        "
+    reportFile.WriteLine "        // Get the dashboard view container"
+    reportFile.WriteLine "        var exceptionView = document.getElementById('exceptionView');"
+    reportFile.WriteLine "        const elements = document.querySelectorAll('[id^=screenshotPopup]');"
+    reportFile.WriteLine "        elements.forEach(function(element) { element.remove(); });"
+    reportFile.WriteLine "        const popupDiv = document.createElement('div');popupDiv.id = 'screenshotPopup'; popupDiv.className = 'popup';popupDiv.style.display = 'none';const closeButton = document.createElement('button');closeButton.textContent = 'Close';closeButton.onclick = closePopup;popupDiv.appendChild(closeButton);"
+    reportFile.WriteLine "        exceptionView.appendChild(popupDiv);"
+    reportFile.WriteLine "        // Loop through all test cases and move them to the dashboard view"
+    reportFile.WriteLine "        testCases.forEach(function(testCase) {"
+    reportFile.WriteLine "            "
+    reportFile.WriteLine "            // Append it to the exception view"
+    reportFile.WriteLine "            exceptionView.appendChild(testCase);"
+    reportFile.WriteLine "        });"
+    reportFile.WriteLine "        testCasesSkipped.forEach(function(testCaseSkipped) {"
+    reportFile.WriteLine "            "
+    reportFile.WriteLine "            // Append it to the exception view"
+    reportFile.WriteLine "            exceptionView.appendChild(testCaseSkipped);"
+    reportFile.WriteLine "        });"
+    reportFile.WriteLine "       }"
+    
+    reportFile.WriteLine "    if(viewID==='testView'){"
+    reportFile.WriteLine "        // Get all elements with the class containing 'test-case'"
+    reportFile.WriteLine "        var testCases = document.querySelectorAll('.test-case');"
+    reportFile.WriteLine "        "
+    reportFile.WriteLine "        // Get the dashboard view container"
+    reportFile.WriteLine "        var testView = document.getElementById('testView');"
+    reportFile.WriteLine "        const elements = document.querySelectorAll('[id^=screenshotPopup]');"
+    reportFile.WriteLine "        elements.forEach(function(element) { element.remove(); });"
+    reportFile.WriteLine "        const popupDiv = document.createElement('div');popupDiv.id = 'screenshotPopup'; popupDiv.className = 'popup';popupDiv.style.display = 'none';const closeButton = document.createElement('button');closeButton.textContent = 'Close';closeButton.onclick = closePopup;popupDiv.appendChild(closeButton);"
+    reportFile.WriteLine "        testView.appendChild(popupDiv);"
+    reportFile.WriteLine "        // Loop through all test cases and move them to the dashboard view"
+    reportFile.WriteLine "        testCases.forEach(function(testCase) {"
+    reportFile.WriteLine "            // Remove the test case from its current position in the DOM"
+    reportFile.WriteLine "            testCase.remove();"
+    reportFile.WriteLine "            "
+    reportFile.WriteLine "            // Append it to the dashboard view"
+    reportFile.WriteLine "            testView.appendChild(testCase);"
+    reportFile.WriteLine "        });    "
+    reportFile.WriteLine "       }"
+    
+    
+    reportFile.WriteLine "}"
+    
+     ' System/environment data
+   ' reportFile.WriteLine "function getSystemDetails(host, executedBy, OS, startTime, EndTime, applicationName) {"
+   ' reportFile.WriteLine "    return { Name: 'Sample System', Tester: 'John Doe', Platform: 'Windows', Environment: 'Staging', AppName: 'MyApp' };"
+   ' reportFile.WriteLine "}"
+   ' reportFile.WriteLine "var systemDetails = getSystemDetails();"
+   ' reportFile.WriteLine "console.log(systemDetails);"
+    
+    reportFile.WriteLine "function showPopup(imageSrc) {"
+    reportFile.WriteLine "    var imgElement = document.createElement('img'); "
+    reportFile.WriteLine "    imgElement.id = 'tempimg'; "
+    reportFile.WriteLine "    imgElement.src = imageSrc; "
+    reportFile.WriteLine "    document.getElementById('screenshotPopup').appendChild(imgElement)"
+    reportFile.WriteLine "    document.getElementById('screenshotPopup').style.display = 'block';"
+    reportFile.WriteLine "}"
+    reportFile.WriteLine "function closePopup() {"
+    reportFile.WriteLine "    document.getElementById('screenshotPopup').style.display = 'none';"
+    reportFile.WriteLine "    document.getElementById('tempimg').remove();"
+    reportFile.WriteLine "}"
+    
+ 
+
+    reportFile.WriteLine "</script>"
+
+    reportFile.WriteLine "</head>"
+    reportFile.WriteLine "<body>"
+    reportFile.WriteLine "<div class='navbar'>"
+reportFile.WriteLine "    <div class='test-time'><img src='C:\output\logo.jpeg' alt='Logo'>"
+reportFile.WriteLine "    &Start Time&</div>"
+reportFile.WriteLine "</div>"
+    reportFile.WriteLine "    <div class='sidebar'>"
+    reportFile.WriteLine "        <a href=""#"" class=""active"" id=""dashboardLink"" onclick=""showView('dashboardView')""><i class='fas fa-tachometer-alt icon'></i></a>"
+    reportFile.WriteLine "        <a href=""#"" class="""" id=""testLink"" onclick=""showView('testView')""><i class='fas fa-flask icon'></i></a>"
+    reportFile.WriteLine "        <a href=""#"" class="""" id=""exceptionLink"" onclick=""showView('exceptionView')""><i class ='fas fa-exclamation-circle icon'></i></a>"
+    reportFile.WriteLine "    </div>"
+    reportFile.WriteLine "    <div class='content'>"
+    reportFile.WriteLine "        <div id='dashboardView'>"
+    reportFile.WriteLine "            <h1>Dashboard</h1>"
+    reportFile.WriteLine "<div style='width: 100%; height: 400px; display: flex; justify-content: center;'>"
+    reportFile.WriteLine "    <table  class='dashboardDetails'>"
+    reportFile.WriteLine "    <tr><td>Host :</td><td>&Host&</td><td rowspan='10' style='width:50%; height: 100%;'><canvas id='chart'></canvas></td></tr>"
+    reportFile.WriteLine "    <tr><td>Executed By :</td><td>&Executed By&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>OS :</td><td>&OS&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>Start Time :</td><td>&Start Time&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>End Time :</td><td>&End Time&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>Application Name :</td><td>&Application Name&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>Total Test Cases Executed :</td><td>&Executed&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>Total Test Cases Passed :</td><td>&Passed&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>Total Test Cases Failed :</td><td>&Failed&</td><td></td></tr>"
+    reportFile.WriteLine "    <tr><td>Total Test Cases Skipped :</td><td>&Skipped&</td><td></td></tr>"
+    
+    reportFile.WriteLine "    "
+    reportFile.WriteLine "    </table>"
+    reportFile.WriteLine "</div>"
+    reportFile.WriteLine "        </div>"
+    reportFile.WriteLine "        <div id='testView' class='hidden'>"
+    reportFile.WriteLine "          "
+    reportFile.WriteLine "            <h1>Test Cases</h1>"
+    reportFile.WriteLine "        </div>"
+    reportFile.WriteLine "        <div id='exceptionView' class='hidden'>"
+    reportFile.WriteLine "            <h1>Failures/Skipped</h1>"
+    reportFile.WriteLine "        </div>"
+    reportFile.WriteLine "    </div>"
+    End Sub
+
+' Log a test case with detailed timestamps and steps
+Sub LogTestCase(testCaseNo, description, status, testStartTime, testEndTime, duration, stepsCount, stepsDescriptions, stepsStatuses, stepScreenshots, errorMsgs)
+    Dim statusClass, stepStatusClass, i, stepDescription, stepStatus, stepTimestamp, screenshotTag, errorMsg, testCaseDivID
+    Dim testID, testStart, testEnd
+
+    ' Generate test ID (e.g., a timestamp for uniqueness)
+    testID = "ID_" & Replace(Now, ":", "") & Replace(Now, " ", "")
+
+    ' Assign appropriate color classes for status
+    If UCase(status) = "PASS" Then
+        statusClass = "pass"
+    ElseIf UCase(status) = "FAIL" Then
+        statusClass = "fail"
+    Else
+        statusClass = "skip"
+    End If
+
+    ' Generate a unique div ID for each test case for easy referencing in JS
+    testCaseDivID = "testCase" & testCaseNo
+
+    reportFile.WriteLine "                <div class=""test-case " & statusClass & """ onclick=""toggleTestSteps('" & testCaseDivID & "')"">"
+    reportFile.WriteLine "                    <h3 class='" & statusClass & "'>" & testCaseNo & " - " & description & "(" & status & ")</h3>"
+    reportFile.WriteLine "                    <div class='details'> <div class='table'><div class='row'><div class='cell'>Test ID:  " & testCaseNo & "</div><div class='cell'> Start:  " & testStartTime & "</div><div class='cell'> End:  " & testEndTime & "</div><div class='cell'> Duration:  " & duration & "</div></div><div>"
+
+    ' Add steps
+    reportFile.WriteLine "                    <div class=""steps"" id=""" & testCaseDivID & """ style=""display: None; border: 1px solid blue;"">"
+    reportFile.WriteLine "                        <table>"
+    reportFile.WriteLine "                            <tr>"
+    reportFile.WriteLine "                                <th>Status</th><th>Timestamp</th><th>Test Step Expectation</th><th>Error</th><th>Screenshot</th>"
+    reportFile.WriteLine "                            </tr>"
+
+    For i = 0 To stepsCount - 1
+        stepDescription = stepsDescriptions(i)
+        stepStatus = stepsStatuses(i)
+        stepTimestamp = FormatDateTime(Now, vbLongTime)  ' Just for illustration, use actual timestamps here
+        If stepStatus = "Fail" Or stepStatus = "Skip" Then
+            errorMsg = errorMsgs(i)
+        Else
+            errorMsg = ""
+        End If
+        
+        ' Color code steps based on their status
+        If UCase(stepStatus) = "PASS" Then
+            stepStatusClass = "pass"
+        ElseIf UCase(stepStatus) = "FAIL" Then
+            stepStatusClass = "fail"
+        Else
+            stepStatusClass = "skip"
+        End If
+
+        ' Add screenshot if available
+        If stepScreenshots(i) <> "" Then
+            screenshotTag = "<button onclick=""showPopup('" & Replace(Replace(stepScreenshots(i), "\", "\\"), "'", "\'") & "')"" ><img  id=""popupImage"" src='" & stepScreenshots(i) & "' alt='Screenshot' style = ""height : 200px; width : 200px; object-fit: contain; display: block;""></button> "
+        Else
+            screenshotTag = "No ScreenShot"
+        End If
+
+        ' Write step details
+        reportFile.WriteLine "                            <tr>"
+        reportFile.WriteLine "                                <td class='" & stepStatusClass & "'>" & stepStatus & "</td>"
+        reportFile.WriteLine "                                <td>" & stepTimestamp & "</td>"
+        reportFile.WriteLine "                                <td>" & stepDescription & "</td>"
+        reportFile.WriteLine "                                <td>" & errorMsg & "</td>"
+        reportFile.WriteLine "                                <td>" & screenshotTag & "</td>"
+        reportFile.WriteLine "                            </tr>"
+        
+    Next
+    reportFile.WriteLine "                        </table>"
+    reportFile.WriteLine "                    </div>"
+    reportFile.WriteLine "                   </div>"
+    reportFile.WriteLine "                  </div>"
+    ' If failed, also add it to the exception view
+    'If UCase(status) = "FAIL" Then
+       ' reportFile.WriteLine "        <div id='exceptionView' style = ""display:None;"">"
+        'reportFile.WriteLine "            <h1>Exceptions</h1>"
+        'reportFile.WriteLine "            <div class='test-case fail'>"  ' Only failed tests will be shown here
+        'reportFile.WriteLine "                <h3>" & testCaseNo & " - " & description & " (" & status & ")</h3>"
+        'reportFile.WriteLine "                <div class='details'>Test ID: " & testID & " | Start: " & testStartTime & " | End: " & testEndTime & " | Duration: " & duration & "</div>"
+        'reportFile.WriteLine "            </div>"
+        'reportFile.WriteLine "        </div>"
+   ' End If
+End Sub
+
+
+Sub FinalizeReport(totalCases, totalPassed, totalFailed, totalSkipped)
+    ' Append closing tags for the HTML structure
+    
+    
+    
+    reportFile.WriteLine "    </div>" ' Close content div
+     reportFile.WriteLine "<script>"
+        ' Add chart.js initialization (if you want to visualize test data)
+    reportFile.WriteLine "var ctx = document.getElementById('chart').getContext('2d');"
+    reportFile.WriteLine "var myChart = new Chart(ctx, {"
+    reportFile.WriteLine "    type: 'pie',"
+    reportFile.WriteLine "    data: {"
+    reportFile.WriteLine "        labels: ['Passed', 'Failed', 'Skipped'],"
+    reportFile.WriteLine "        datasets: [{"
+    reportFile.WriteLine "            label: 'Test Results',"
+    reportFile.WriteLine "            data: [" & totalPassed & ", " & totalFailed & ", " & totalSkipped & "],"
+    reportFile.WriteLine "            backgroundColor: ['#4caf50', '#f44336', '#ffeb3b'],"
+    reportFile.WriteLine "        }]"
+    reportFile.WriteLine "    },"
+    reportFile.WriteLine "    options: { responsive: true, plugins: { legend: { position: 'top' } } }"
+    reportFile.WriteLine "});"
+     reportFile.WriteLine "</script>"
+    reportFile.WriteLine "<footer style='margin : 5%; 0%;' height : 5%;>"
+    reportFile.WriteLine "<img src=""C:\\output\\logo.jpeg"" style = ""object-fit: contain; width = 180px, height =50px; float: left; margin-left : 15% 0%; vertial-align: middle;""></img>"
+    reportFile.WriteLine "<span style='float: right;'>Baxter Confidential - Do not distribute with out prior approval</span>"
+    reportFile.WriteLine "</footer>"
+    reportFile.WriteLine "</body>"
+    reportFile.WriteLine "</html>"
+
+    ' Close the file
+    reportFile.Close
+End Sub
+
+

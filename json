@@ -1,0 +1,273 @@
+{
+	"dataPoints": [
+            {
+                "dataPointId": "c1f07f5a24ed37c93e67e5d7d1e0f14c",
+                "dataPointType": "QUOTE",
+                "dataPointData": {
+                    "BuildingsCoverRequired": true,
+                    "ContentsCoverRequired": true,
+                    "Currency": "GBP",
+                    "InsuranceRefusedCancelledDeclinedVoid": {
+                        "code": "false"
+                    },
+                    "MigratedRenewalTerm": false,
+                    "MigrationPolicy": {
+                        "code": "false"
+                    },                                      
+                    "TermDefinitionCode": "AnnualTerm",
+                    "TermSequenceNumber": 0,
+                    "UnspecifiedBicyclesCoverRequested": true,
+                    "UnspecifiedPersonalBelongingsCoverRequested": true,
+                    "UnspecifiedPersonalBelongingsSumInsuredRequested": {
+                        "code": "3000"
+                    },
+                    "UnspentConvictions": {
+                        "code": "false"
+                    },
+                    "Policyholder": [
+                        {
+                            "Age": 38,
+                            "AllowEmail": false,
+                            "AllowSms": false,
+                            "DateOfBirth": "1986-04-02",
+                            "Deceased": false,
+                            "Email": "joesph.kash@email.test.aviva.com",
+                            "FirstName": "Joesph",
+                            "LastName": "Kash",
+                            "Mobile": "07897564321",
+                            "PartyType": "INDIVIDUAL",
+                            "PreferredContactMethod": {
+                                "code": "EMAIL"
+                            },
+                            "SearchName": "JOESPHKASH",
+                            "SpecialistPrintFormat": {
+                                "code": "001"
+                            },
+                            "Title": {
+                                "code": "003"
+                            },
+                            "YearsHeldHomeInsurance": {
+                                "code": "2"
+                            },
+                            "CorrespondenceAddress": {
+                                "Country": {
+                                    "code": "GB"
+                                },
+                                "Line1": "Apartment 62",
+                                "Line2": "2 Riverlight Quay",
+                                "Postcode": "SW11 8AW",
+                                "PostTown": "London"
+                            }
+                        }
+                    ],
+                    "SecondaryPolicyholder": [
+                        {
+                            "Age": 34,
+                            "AllowEmail": false,
+                            "AllowSms": false,
+                            "CorrespondenceAddressSameAsPolicyholder": true,
+                            "DateOfBirth": "1990-06-14",
+                            "Deceased": false,
+                            "FirstName": "Helin",
+                            "LastName": "Kash",
+                            "PartyType": "INDIVIDUAL",
+                            "SearchName": "HELINKASH",
+                            "Title": {
+                                "code": "004"
+                            }
+                        }
+                    ],
+                    "Claim": [
+                        {
+                            "AtThisAddress": false,
+                            "ClaimDate": "2023-12-14",
+                            "ClaimNumber": "4500770447",
+                            "ClaimStatus": {
+                                "code": "005"
+                            },
+                            "ClaimType": {
+                                "code": "002"
+                            },
+                            "Imported": false,
+                            "PolicySection": {
+                                "code": "001"
+                            },
+                            "TotalCosts": 100.0
+                        }
+                    ]
+                }
+            },
+            {
+                "dataPointId": "723e21e93c5dec8604cb070a343eb2a4",
+                "parentDataPointId": "c1f07f5a24ed37c93e67e5d7d1e0f14c",
+                "dataPointType": "DRIVER",
+                "dataPointData": {
+                    "AllowEmail": false,
+                    "AllowSms": false,
+                    "Deceased": false,
+                    "DelegatedAuthorityType": {
+                        "code": "001"
+                    },
+                    "FirstName": "Goofu",
+                    "LastName": "Golu",
+                    "LifetimeId": "0000000001",
+                    "NamedPartyDefinitionCode": "DelegatedAuthority",
+                    "NominatedBy": {
+                        "code": "001"
+                    },
+                    "PartyType": {
+                        "code": "INDIVIDUAL"
+                    },
+                    "SearchName": "GOOFUGOLU",
+                    "Title": {
+                        "code": "003"
+                    }
+                }
+            },
+            {
+                "dataPointId": "c36e3f0d3cc978e8bd38898e0ace96a6",
+                "parentDataPointId": "c1f07f5a24ed37c93e67e5d7d1e0f14c",
+                "dataPointType": "BUILDING",
+                "dataPointData": {
+                    "BayWindowOrPorchPresent": {
+                        "code": "false"
+                    },
+                    "BuildingsCoverVoluntaryExcess": {
+                        "code": "200"
+                    },
+                    "ConservatoryOrExtensionPresent": {
+                        "code": "false"
+                    },
+                    "ContentsCoverVoluntaryExcess": {
+                        "code": "200"
+                    },
+                    "DetachedBrickGarageOrOutbuildingPresent": {
+                        "code": "false"
+                    },
+                    "ForeignRegistrationInd": false,
+                    "GoodStateOfRepair": {
+                        "code": "true"
+                    },
+                    "HistoryOfFlood": {
+                        "code": "false"
+                    },
+                    "HistoryOfSubsidenceHeaveOrLandslip": {
+                        "code": "false"
+                    },
+                    "InsuredObjectDefinitionCode": "Building",
+                    "LeftUnoccupiedForMoreThan60ConsecutiveDays": {
+                        "code": "false"
+                    },
+                    "LifetimeId": "0000000001",
+                    "ListedBuilding": {
+                        "code": "false"
+                    },
+                    "MobileHomeParkHomeStaticCaravanResidentialCaravanBedsitHallsResidence": {
+                        "code": "false"
+                    },
+                    "NumberOfAdults": {
+                        "code": "2"
+                    },
+                    "NumberOfBathrooms": {
+                        "code": "2"
+                    },
+                    "NumberOfBedrooms": {
+                        "code": "2"
+                    },
+                    "NumberOfChildren": {
+                        "code": "1"
+                    },
+                    "OwnershipStatus": {
+                        "code": "002"
+                    },
+                    "ProblemsWithTheDrains": {
+                        "code": "false"
+                    },
+                    "PropertyAddressSameAsPolicyholdersCorrespondenceAddress": true,
+                    "PropertyType": {
+                        "code": "005"
+                    },
+                    "PropertyUsage": {
+                        "code": "001"
+                    },
+                    "RequiredCover": {
+                        "code": "003"
+                    },
+                    "StandardConstruction": {
+                        "code": "true"
+                    },
+                    "StructuralRenovationsOrAlterations": {
+                        "code": "false"
+                    },
+                    "SubsidenceQuestionnaire": true,
+                    "TreesOver10mTallLessThan5mFromProperty": {
+                        "code": "true"
+                    },
+                    "TreesOver10mTallLessThan5mFromPropertyNotInPolicyholderLand": {
+                        "code": "false"
+                    },
+                    "UsedForBusinessOrRentedOutToPayingGuests": {
+                        "code": "false"
+                    },
+                    "WallCracks": {
+                        "code": "001"
+                    },
+                    "YearBuilt": 2015,
+                    "Address": {
+                        "Country": {
+                            "code": "GB"
+                        },
+                        "Line1": "Apartment 62",
+                        "Line2": "2 Riverlight Quay",
+                        "Postcode": "SW11 8AW",
+                        "PostTown": "London"
+                    }
+                }
+            },
+            {
+                "dataPointId": "3127ae9e83db260f8dcd8e58d73cb7a6",
+                "parentDataPointId": "c1f07f5a24ed37c93e67e5d7d1e0f14c",
+                "dataPointType": "SPECIFIED_VALUABLE",
+                "dataPointData": {
+                    "ForeignRegistrationInd": false,
+                    "InsuredObjectDefinitionCode": "SpecifiedValuable",
+                    "InsuredObjectDescription": "Gold",
+                    "InsuredObjectValue": 1000,
+                    "LifetimeId": "0000000002",
+                    "SpecifiedValuableType": {
+                        "code": "PM1"
+                    }
+                }
+            },
+            {
+                "dataPointId": "c7cb5d3f5cc5ee274ddc46a2023db9bd",
+                "parentDataPointId": "c1f07f5a24ed37c93e67e5d7d1e0f14c",
+                "dataPointType": "SPECIFIED_PERSONAL_BELONGING",
+                "dataPointData": {
+                    "ForeignRegistrationInd": false,
+                    "InsuredObjectDefinitionCode": "SpecifiedPersonalBelonging",
+                    "InsuredObjectDescription": "Tent",
+                    "InsuredObjectValue": 2500,
+                    "LifetimeId": "0000000003",
+                    "SpecifiedPersonalBelongingType": {
+                        "code": "003"
+                    }
+                }
+            },
+            {
+                "dataPointId": "b75f73f80acd91929aa096ec8a0d3035",
+                "parentDataPointId": "c1f07f5a24ed37c93e67e5d7d1e0f14c",
+                "dataPointType": "SPECIFIED_BICYCLE",
+                "dataPointData": {
+                    "ForeignRegistrationInd": false,
+                    "InsuredObjectDefinitionCode": "SpecifiedBicycle",
+                    "InsuredObjectDescription": "Cycle",
+                    "InsuredObjectValue": 3000,
+                    "LifetimeId": "0000000004",
+                    "SpecifiedBicycleType": {
+                        "code": "001"
+                    }
+                }
+            }
+        ]
+	}

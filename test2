@@ -1,0 +1,18 @@
+listImpacted.forEach(impacted->{
+			JavaScriptExecutorUtil.scrollIntoViewofWebElement(driver, impacted);
+			Select select = new Select(impacted);
+			String defaultValue = select.getAllSelectedOptions()
+					.stream()
+					.findFirst()
+					.map(WebElement::getText)
+					.orElse("No default Value Selected");
+			if(!defaultValue.equals(defaultImpacted)) {
+				softassert.assertTrue(false);
+				ern.enterEvent(Status.FAIL, "Default value selected for Impact is not "+defaultImpacted);
+				check  = false;
+				return;
+			}
+			else {
+				softassert.assertTrue(true);
+			}
+		});
